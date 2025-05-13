@@ -64,6 +64,7 @@ sub startup ( $app ) {
     path( dist_dir( 'CPAN-Testers-Collector' ), 'templates' );
   unshift @{ $app->static->paths },
     path( dist_dir( 'CPAN-Testers-Collector' ), 'public' );
+  push @{$app->commands->namespaces}, 'CPAN::Testers::Collector::Command';
 
   $app->moniker( 'collector' );
   $app->plugin( Config => {
