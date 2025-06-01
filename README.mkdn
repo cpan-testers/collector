@@ -1,0 +1,59 @@
+# NAME
+
+CPAN::Testers::Collector - Collect, store, and synchronize CPAN Testers reports
+
+# VERSION
+
+version 0.001
+
+# SYNOPSIS
+
+    $ cpantesters-api daemon
+    Listening on http://*:5000
+
+# DESCRIPTION
+
+XXX
+
+# METHODS
+
+## startup
+
+    # Called automatically by Mojolicious
+
+This method starts up the application, loads any plugins, sets up routes,
+and registers helpers.
+
+# CONFIG
+
+This application can be configured by setting the `MOJO_CONFIG`
+environment variable to the path to a configuration file. The
+configuration file is a Perl script containing a single hash reference,
+like:
+
+    # collector.conf
+    {
+        storage_root => '/mnt/reports',
+    }
+
+The possible configuration keys are below:
+
+-
+
+# SEE ALSO
+
+[http://github.com/cpan-testers](http://github.com/cpan-testers),
+[http://www.cpantesters.org](http://www.cpantesters.org),
+[Mojolicious](https://metacpan.org/pod/Mojolicious),
+[Mojolicious::Plugin::OpenAPI](https://metacpan.org/pod/Mojolicious%3A%3APlugin%3A%3AOpenAPI)
+
+# AUTHOR
+
+Doug Bell <preaction@cpan.org>
+
+# COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2025 by Doug Bell.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
