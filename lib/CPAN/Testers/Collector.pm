@@ -40,10 +40,14 @@ L<Mojolicious::Plugin::OpenAPI>
 
 =cut
 
+use builtin ':5.40';
 use Mojo::Base 'Mojolicious', -signatures;
 use File::Share qw( dist_dir dist_file );
 use Log::Any::Adapter;
+use Log::Any qw($LOG);
 use Mojo::File qw( path );
+use Mojo::JSON qw( decode_json );
+use OpenAPI::Modern;
 
 =method startup
 
@@ -85,16 +89,37 @@ sub startup ( $app ) {
   my $r = $app->routes;
 
   # Documentation routes
-  $r->get( '/' => 'index' );
-
-  # Legacy compatibility routes
-  $r->post( '/api/v1/register' => 'LegacyMetabase#user_post' );
-  $r->post( '/api/v1/submit' => 'LegacyMetabase#report_post' );
+  $r->get( '/' => sub ($c) { $c->render('index') } );
 
   # API routes
-  $app->plugin( OpenAPI => {
-    url => dist_file( 'CPAN-Testers-Collector' => 'public/api/v1.json' ),
-    allow_invalid_ref => 1,
+  my $v1 = $r->under('/api/v1', sub ($c) {
+    my $result = $c->openapi->validate_request($c->req);
+    if ($result->valid) {
+      return true;
+    }
+    $LOG->error( 'validation failed', { errors => $result->errors } );
+    $c->render( status => 400, json => $result->TO_JSON );
+    return false;
+  });
+  $v1->post('/report')->to('report#report_post');
+  $v1->get('/report/:uuid')->to('report#report_get');
+
+  # Build API schema
+  # I think I have to do all this in order to get the separate JSON
+  # schema in the right place with the right URL.
+  my $oapi_path = Mojo::File->new( dist_file( 'CPAN-Testers-Collector' => 'public/api/v1.json' ) );
+  my $oapi = OpenAPI::Modern->new(
+    openapi_schema => decode_json( $oapi_path->slurp ),
+    openapi_uri => 'https://collector.cpantesters.org/api/v1.json',
+  );
+  my $schema_path = Mojo::File->new( dist_file( 'CPAN-Testers-Collector' => 'public/schema/v1/report.json' ) );
+  $oapi->evaluator->add_schema(
+    'https://collector.cpantesters.org/schema/v1/report.json',
+    decode_json( $schema_path->slurp ),
+  );
+
+  $app->plugin( 'OpenAPI::Modern' => {
+    openapi_obj => $oapi,
   } );
 }
 

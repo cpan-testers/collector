@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "version": "1.0.0",
     "title": "CPAN Testers Collector API",
+    "version": "1.0.0",
     "description": "API to submit, read, and synchronize CPAN Testers reports.",
     "termsOfService": "https://collector.cpantesters.org/license",
     "contact": {
@@ -11,14 +11,13 @@
     },
     "license": {
       "name": "Artistic License 1.0 (Perl)",
-      "identifier": "Artistic-1.0-Perl",
-      "url": "https://dev.perl.org/licenses/"
+      "identifier": "Artistic-1.0-Perl"
     }
   },
 
   "servers": [
     {
-      "url": "https://collector.cpantesters.org/v1",
+      "url": "https://collector.cpantesters.org/api/v1",
       "description": "Primary entry point"
     }
   ],
@@ -28,37 +27,46 @@
       "post": {
         "tags": ["Report"],
         "description": "Submit a new report to CPAN Testers",
-        "x-mojo-to": {
-          "controller": "Report",
-          "action": "report_post"
-        },
         "operationId": "report_post",
-        "parameters": [{
-          "name": "report",
-          "in": "body",
-          "required": true,
-          "schema": { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" }
-        }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "report was created",
-            "schema": { "$ref": "#/components/schemas/AcceptedReports" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AcceptedReports" }
+              }
+            }
           },
           "303": {
             "description": "duplicate report",
-            "schema": { "$ref": "#/components/schemas/Error" }
-          },
-          "401": {
-            "description": "invalid credentials",
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           },
           "400": {
             "description": "report contains errors",
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           },
           "default": {
             "description": "unexpected error",
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           }
         }
       }
@@ -68,37 +76,47 @@
       "get": {
         "tags": ["Report"],
         "description": "Fetch report data from CPAN Testers",
-        "x-mojo-to": {
-          "controller": "Report",
-          "action": "report_get"
-        },
         "operationId": "report_get",
         "parameters": [{
           "name": "id",
           "in": "path",
           "description": "The report UUID in standard hex format (like 01be7be2-2aec-11e7-a074-e1beba07c9dd)",
-          "type": "string",
-          "required": true
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
         }],
         "responses": {
           "200": {
             "description": "Report details",
-            "schema": {
-              "allOf": [
-                { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" },
-                {
-                  "required": [ "id", "created" ]
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" },
+                    {
+                      "required": [ "id", "created" ]
+                    }
+                  ]
                 }
-              ]
+              }
             }
           },
           "400": {
             "description": "report id is invalid",
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           },
           "404": {
             "description": "The specified report was not found",
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           }
         }
       }

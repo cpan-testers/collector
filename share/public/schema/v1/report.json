@@ -111,7 +111,7 @@
           "additionalProperties": { "type": "string" }
         }
       }
-    }
+    },
     "result": {
       "type": "object",
       "required": ["grade", "output"],
