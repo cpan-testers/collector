@@ -117,17 +117,13 @@ sub startup ( $app ) {
   $r->get( '/' => sub ($c) { $c->render('index') } );
 
   # API routes
-  my $v1 = $r->under('/api/v1', sub ($c) {
-    my $result = $c->openapi->validate_request($c->req);
-    if ($result->valid) {
-      return true;
-    }
-    $LOG->error( 'validation failed', { errors => $result->errors } );
-    $c->render( status => 400, json => $result->TO_JSON );
-    return false;
-  });
-  $v1->post('/report')->to('report#report_post');
-  $v1->get('/report/:uuid')->to('report#report_get');
+  #my $v1 = $r->under('/v1', sub ($c) { 1 });
+  # FIXME: I can't figure out a way to make a good `under` that does
+  # validation since I wire up the route to an operation ID by
+  # specifying the operation_id stash value. By the time the `under` is
+  # called, the stash for the final endpoint hasn't been resolved yet.
+  $r->post('/v1/report')->to('report#report_post', operation_id => 'report_post');
+  $r->get('/v1/report/:uuid')->to('report#report_get', operation_id => 'report_get');
 
   # Build API schema
   # I think I have to do all this in order to get the separate JSON

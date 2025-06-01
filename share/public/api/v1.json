@@ -17,13 +17,13 @@
 
   "servers": [
     {
-      "url": "https://collector.cpantesters.org/api/v1",
+      "url": "https://collector.cpantesters.org",
       "description": "Primary entry point"
     }
   ],
 
   "paths": {
-    "/report": {
+    "/v1/report": {
       "post": {
         "tags": ["Report"],
         "description": "Submit a new report to CPAN Testers",
@@ -40,7 +40,13 @@
             "description": "report was created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AcceptedReports" }
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           },
@@ -72,7 +78,7 @@
       }
     },
 
-    "/report/{id}": {
+    "/v1/report/{id}": {
       "get": {
         "tags": ["Report"],
         "description": "Fetch report data from CPAN Testers",
@@ -125,14 +131,6 @@
 
   "components": {
     "schemas": {
-      "AcceptedReports": {
-        "type": "object",
-        "required": ["id"],
-        "properties": {
-          "status": { "type": "string" },
-          "id": { "type": "string", "format": "uuid" }
-        }
-      },
       "Error": {
         "title": "OpenAPI Error Object",
         "properties": {
