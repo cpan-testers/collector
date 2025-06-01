@@ -20,7 +20,7 @@ like:
 
   # collector.conf
   {
-      report_root => '/mnt/reports',
+      storage_root => '/mnt/reports',
   }
 
 The possible configuration keys are below:
@@ -41,13 +41,21 @@ L<Mojolicious::Plugin::OpenAPI>
 =cut
 
 use builtin ':5.40';
+use OpenTelemetry::SDK;
 use Mojo::Base 'Mojolicious', -signatures;
 use File::Share qw( dist_dir dist_file );
-use Log::Any::Adapter;
+use Log::Any::Adapter 'Multiplex' =>
+  # Set up Log::Any to log to OpenTelemetry and Stderr so we can still
+  # see the local logs.
+  adapters => {
+    'OpenTelemetry' => [],
+    'Stderr' => [],
+  };
 use Log::Any qw($LOG);
 use Mojo::File qw( path );
 use Mojo::JSON qw( decode_json );
 use OpenAPI::Modern;
+use CPAN::Testers::Collector::Storage;
 
 =method startup
 
@@ -58,11 +66,20 @@ and registers helpers.
 
 =cut
 
+has moniker => 'collector';
+
 sub startup ( $app ) {
-  $app->log( Mojo::Log->new ); # Log only to STDERR
-  # Forward Log::Any logs to the Mojo::Log logger
-  Log::Any::Adapter->set( 'MojoLog', logger => $app->log );
-  # TODO: Set up OpenTelemetry reporting to status.cpantesters.org
+  # Remove Mojo::Log from STDERR so that we don't double-log
+  $app->log(Mojo::Log->new(handle => undef));
+  # Forward Mojo::Log logs to the Log::Any logger, so that from there
+  # they will be forwarded to OpenTelemetry.
+  # Modules should prefer to log with Log::Any because it supports
+  # structured logging.
+  $app->log->on( message => sub ( $, $level, @lines ) {
+    $LOG->$level(@lines);
+  });
+
+  $app->plugin('OpenTelemetry');
 
   unshift @{ $app->renderer->paths },
     path( dist_dir( 'CPAN-Testers-Collector' ), 'templates' );
@@ -70,12 +87,20 @@ sub startup ( $app ) {
     path( dist_dir( 'CPAN-Testers-Collector' ), 'public' );
   push @{$app->commands->namespaces}, 'CPAN::Testers::Collector::Command';
 
-  $app->moniker( 'collector' );
   $app->plugin( Config => {
     default => {
-      report_root => './var/reports',
+      storage => {
+        root => './var/reports',
+      },
     },
   } );
+
+  $app->helper( storage => sub ($c) {
+    state $storage = CPAN::Testers::Collector::Storage->new(
+      %{ $c->config->{storage} || {} },
+    );
+    return $storage;
+  });
 
   # Allow CORS for everyone
   $app->hook( after_build_tx => sub {
