@@ -69,9 +69,9 @@ subtest 'report_list' => sub {
   my $dt = Time::Piece->new;
   $t->app->storage->write( $uuid => encode_json( $minimum_report ), timestamp => $dt );
 
-  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d'))->status_is(200)->json_is([$minimum_report]);
-  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H'))->status_is(200)->json_is([$minimum_report]);
-  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H/%M'))->status_is(200)->json_is([$minimum_report]);
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d'))->status_is(200)->json_is([$uuid]);
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H'))->status_is(200)->json_is([$uuid]);
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H/%M'))->status_is(200)->json_is([$uuid]);
 
   # XXX: check invalid date/time
   # XXX: check date/time with no reports

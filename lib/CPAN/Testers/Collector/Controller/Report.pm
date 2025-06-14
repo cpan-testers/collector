@@ -65,13 +65,7 @@ sub report_list( $c ) {
   my $to = sprintf $format, $year, $mon, $day, $hour // 23, $min // 59, 59, '+0000';
 
   my @uuids = $c->storage->list( from => $from, to => $to );
-  my @reports;
-  for my $uuid ( @uuids ) {
-    push @reports, $c->storage->read( $uuid );
-  }
-
-  $c->res->headers->content_type('application/json');
-  $c->render( data => "[\n" . join( ",\n", @reports ) . "\n]\n" );
+  $c->render( json => \@uuids );
 }
 
 1;
