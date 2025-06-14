@@ -1,0 +1,7 @@
+% extends 'layouts/moai/default';
+% content_for footer => begin
+<div style="text-align: center">
+  CPAN Testers Network
+  <br/>XXX Add links to all the things here
+</div>
+% end;

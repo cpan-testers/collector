@@ -95,6 +95,8 @@ sub startup ( $app ) {
     },
   } );
 
+  $app->plugin( Moai => [ 'Bootstrap4', { version => '4.4.1' } ] );
+
   $app->helper( storage => sub ($c) {
     state $storage = CPAN::Testers::Collector::Storage->new(
       %{ $c->config->{storage} || {} },
@@ -115,6 +117,7 @@ sub startup ( $app ) {
 
   # Documentation routes
   $r->get( '/' => sub ($c) { $c->render('index') } );
+  $r->get( '/help/:tmpl' => [ tmpl => [qw( report api )]], => sub ($c) { $c->render('help/' . $c->stash('tmpl')) } );
 
   # API routes
   #my $v1 = $r->under('/v1', sub ($c) { 1 });

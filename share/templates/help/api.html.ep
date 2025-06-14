@@ -1,0 +1,8 @@
+% layout 'default';
+% content_for main => begin
+  <h1>Collector APIs</h1>
+
+  <p>XXX</p>
+
+  <p><a href="/">Back</a></p>
+% end;

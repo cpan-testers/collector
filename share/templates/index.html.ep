@@ -1,1 +1,14 @@
-<h1>It's working</h1>
+% layout 'default';
+% content_for main => begin
+  <h1>CPAN Testers Collector</h1>
+
+  <p>The <a href="https://cpantesters.org">CPAN Testers</a> Collector
+  accepts and stores incoming test reports. Test reporters submit reports,
+  and applications read reports to create visualizations and summaries for
+  consumption.
+
+  <ul>
+    <li><a href="/help/report">Become a test reporter</a></li>
+    <li><a href="/help/api">Develop an application</a></li>
+  </ul>
+% end;
