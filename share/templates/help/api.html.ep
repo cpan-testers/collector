@@ -2,7 +2,15 @@
 % content_for main => begin
   <h1>Collector APIs</h1>
 
-  <p>XXX</p>
+  <p>The CPAN Testers Collector provides APIs for submitting and reading
+  complete test reports. For applications, there is a simple
+  synchronization API to fetch reports from a specified time period to
+  derive data from them.</p>
+
+  <ul>
+    <li><a href="/public/api/v1.json">View the v1 OpenAPI specification</a></li>
+    <li><a href="/public/schema/v1.json">View the v1 Test Report JSON Schema</a></li>
+  </ul>
 
   <p><a href="/">Back</a></p>
 % end;

@@ -2,7 +2,51 @@
 % content_for main => begin
   <h1>Become a Test Reporter</h1>
 
-  <p>XXX</p>
+  <p>Becoming a test reporter is the easiest way to contribute to CPAN
+  Testers! By integrating with your existing CPAN client, you can send
+  in test reports whenever you install a CPAN module. Then, if
+  installing a CPAN module fails, you are reporting the failure to the
+  module's author so they can fix it!</p>
+
+  <h2>Integrate With a CPAN Client</h2>
+
+  <p>CPAN Testers already has integrations with the primary CPAN clients
+  in use today:</p>
+
+  <h3>cpanminus</h3>
+
+  <p>To become a reporter with <tt>cpanm</tt>, install
+  <a href="https://metacpan.org/dist/App-cpanminus-reporter/view/bin/cpanm-reporter">
+  the <tt>cpanm-reporter</tt> command</a> from CPAN, and configure it:</p>
+
+  <p><pre>$ cpanm App::cpanminus::reporter
+$ cpanm-reporter --setup</pre></p>
+
+  <p>Then, after you install a CPAN module, you can submit the
+  report(s) by running <tt>cpanm-reporter</tt>:</p>
+
+  <p><pre>$ cpanm Mojolicious
+$ cpanm-reporter</pre></p>
+
+  <h3>CPAN.pm</h3>
+
+  <p>To become a reporter with the default <tt>cpan</tt> client included
+  with Perl, use <a href="https://metacpan.org/pod/CPAN::Reporter">the
+  CPAN::Reporter module</a> by installing
+  <a href="https://metacpan.org/pod/Task::CPAN::Reporter">the
+  Task::CPAN::Reporter module</a> and configuring it:</p>
+
+  <p><pre>$ cpan
+cpan&gt; install Task::CPAN::Reporter
+cpan&gt; reload cpan
+cpan&gt; o conf init test_report</pre></p>
+
+  <h2>Develop Your Own Test Reporter</h2>
+
+  <p>If you are not using one of the above CPAN clients, or you want to
+  develop your own reporter, you can use <a href="https://metacpan.org/pod/CPAN::Testers::Common::Client">
+  the CPAN::Testers::Common::Client library</a> or use <a href="/help/api">
+  the CPAN Testers Collector API</a> directly.
 
   <p><a href="/">Back</a></p>
 % end;
