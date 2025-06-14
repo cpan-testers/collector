@@ -24,8 +24,8 @@ sub run ($self, @args) {
 
   GetOptionsFromArray(\@args, \%opt, 'max=i', 'page=i' ) or pod2usage(1);
   $LOG->info('Starting ' . __PACKAGE__ );
-  my ( $reports_root, $start_id ) = @args;
-  $start_id //= 0;
+  my ( $reports_root, $start_dt ) = @args;
+  $start_dt //= '2000-01-01T00:00:00';
 
   my $rdb = CPAN::Testers::Collector::Storage->new( root => $reports_root );
   $LOG->info('Connecting to CPAN::Testers::Schema');
@@ -38,17 +38,17 @@ sub run ($self, @args) {
   # Start crawling through the test reports
   # XXX
   while ( $total_processed <= 0 || $got_rows >= $opt{page} ) {
-    $LOG->info('Executing read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
-    my $sth = $dbh->prepare('SELECT * FROM test_reports WHERE id >= ? LIMIT ' . $opt{page});
-    $sth->execute($start_id);
+    $LOG->info('Executing read', { total_processed => $total_processed, page_size => $opt{page}, start_dt => $start_dt });
+    my $sth = $dbh->prepare('SELECT * FROM test_reports WHERE created >= ? LIMIT ' . $opt{page});
+    $sth->execute($start_dt);
     $got_rows = 0;
     while ( my $row = $sth->fetchrow_hashref ) {
       $total_processed++;
       $got_rows++;
       $rdb->write( $row->{id}, encode_json( $row->{report} ), timestamp => $row->{created} );
-      $start_id = $mb_row->{id} + 1;
+      $start_dt = $row->{created};
     }
-    $LOG->info( "Read rows", { got_rows => $got_rows, page_size => $opt{page}, next_start_id => $start_id });
+    $LOG->info( "Read rows", { got_rows => $got_rows, page_size => $opt{page}, next_start_dt => $start_dt });
     last if $total_processed >= $opt{max};
   }
   $LOG->info("Finished converting reports");
