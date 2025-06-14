@@ -127,7 +127,9 @@ sub startup ( $app ) {
 
   # Build API schema
   # I think I have to do all this in order to get the separate JSON
-  # schema in the right place with the right URL.
+  # schema in the right place with the right URL so it doesn't cause
+  # a web request that might fail (it'd potentially be a different
+  # version entirely...)
   my $oapi_path = Mojo::File->new( dist_file( 'CPAN-Testers-Collector' => 'public/api/v1.json' ) );
   my $oapi = OpenAPI::Modern->new(
     openapi_schema => decode_json( $oapi_path->slurp ),
