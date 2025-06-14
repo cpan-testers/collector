@@ -52,27 +52,15 @@
           },
           "303": {
             "description": "duplicate report",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
-              }
-            }
+            "$ref": "#/components/responses/default"
           },
           "400": {
             "description": "report contains errors",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
-              }
-            }
+            "$ref": "#/components/responses/default"
           },
           "default": {
             "description": "unexpected error",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
-              }
-            }
+            "$ref": "#/components/responses/default"
           }
         }
       }
@@ -98,39 +86,183 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "allOf": [
-                    { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" },
-                    {
-                      "required": [ "id", "created" ]
-                    }
-                  ]
+                  "$ref": "#/components/schemas/SubmittedReport"
                 }
               }
             }
           },
           "400": {
             "description": "report id is invalid",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
-              }
-            }
+            "$ref": "#/components/responses/default"
           },
           "404": {
             "description": "The specified report was not found",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
-              }
-            }
+            "$ref": "#/components/responses/default"
+          }
+        }
+      }
+    },
+
+    "/v1/timestamp/{year}/{month}/{day}": {
+      "get": {
+        "description": "Get a list of reports by date/time",
+        "operationId": "report_list_day",
+        "parameters": [
+          { "$ref": "#/components/parameters/year" },
+          { "$ref": "#/components/parameters/month" },
+          { "$ref": "#/components/parameters/day" }
+        ],
+        "responses": {
+          "default": { "$ref": "#/components/responses/default" },
+          "200": { "$ref": "#/components/responses/reportList" },
+          "400": {
+            "description": "invalid date/time",
+            "$ref": "#/components/responses/default"
+          }
+        }
+      }
+    },
+
+    "/v1/timestamp/{year}/{month}/{day}/{hour}": {
+      "get": {
+        "description": "Get a list of reports by date/time",
+        "operationId": "report_list_hour",
+        "parameters": [
+          { "$ref": "#/components/parameters/year" },
+          { "$ref": "#/components/parameters/month" },
+          { "$ref": "#/components/parameters/day" },
+          { "$ref": "#/components/parameters/hour" }
+        ],
+        "responses": {
+          "default": { "$ref": "#/components/responses/default" },
+          "200": { "$ref": "#/components/responses/reportList" },
+          "400": {
+            "description": "invalid date/time",
+            "$ref": "#/components/responses/default"
+          }
+        }
+      }
+    },
+
+    "/v1/timestamp/{year}/{month}/{day}/{hour}/{minute}": {
+      "get": {
+        "description": "Get a list of reports by date/time",
+        "operationId": "report_list_minute",
+        "parameters": [
+          { "$ref": "#/components/parameters/year" },
+          { "$ref": "#/components/parameters/month" },
+          { "$ref": "#/components/parameters/day" },
+          { "$ref": "#/components/parameters/hour" },
+          { "$ref": "#/components/parameters/minute" }
+        ],
+        "responses": {
+          "default": { "$ref": "#/components/responses/default" },
+          "200": { "$ref": "#/components/responses/reportList" },
+          "400": {
+            "description": "invalid date/time",
+            "$ref": "#/components/responses/default"
           }
         }
       }
     }
+
   },
 
   "components": {
+    "parameters": {
+      "year": {
+        "name": "year",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "description": "A four-digit year",
+          "minimum": 2008
+        }
+      },
+      "month": {
+        "name": "month",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": "A two-digit month",
+          "pattern": "^(0[1-9]|1[0-2])$"
+        }
+      },
+      "day": {
+        "name": "day",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": "A two-digit day",
+          "pattern": "^([0-2][1-9]|3[0-1])$"
+        }
+      },
+      "hour": {
+        "name": "hour",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": "A two-digit hour",
+          "pattern": "^([0-1][1-9]|2[0-3])$"
+        }
+      },
+      "minute": {
+        "name": "minute",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "description": "A two-digit minute",
+          "pattern": "^([0-5][0-9])$"
+        }
+      }
+    },
+
+    "responses": {
+      "default": {
+        "description": "unexpected error",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "reportList": {
+        "description": "List of reports",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ListOfSubmittedReports"
+            }
+          }
+        }
+      }
+    },
+
     "schemas": {
+      "SubmittedReport": {
+        "title": "Submitted Report",
+        "description": "A report that has been submitted. Some optional fields are now required.",
+        "allOf": [
+          { "$ref": "https://collector.cpantesters.org/schema/v1/report.json" },
+          {
+            "required": [ "id", "created" ]
+          }
+        ]
+      },
+
+      "ListOfSubmittedReports": {
+        "title": "List of Submitted Reports",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/SubmittedReport"
+        }
+      },
+
       "Error": {
         "title": "OpenAPI Error Object",
         "properties": {

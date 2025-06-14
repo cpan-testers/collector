@@ -1,17 +1,11 @@
 
+use v5.40;
 use Test::Mojo;
 use Test2::V0;
 use File::Temp;
 use Data::GUID;
 use Mojo::JSON qw( encode_json );
-
-my $tempdir = File::Temp->newdir;
-
-my $t = Test::Mojo->new('CPAN::Testers::Collector', {
-  storage => {
-    root => $tempdir->dirname,
-  },
-});
+use Time::Piece;
 
 my $minimum_report = {
   reporter => {
@@ -38,6 +32,13 @@ my $minimum_report = {
   },
 };
 
+my $tempdir = File::Temp->newdir;
+my $t = Test::Mojo->new('CPAN::Testers::Collector', {
+  storage => {
+    root => $tempdir->dirname,
+  },
+});
+
 subtest 'report_post' => sub {
   $t->post_ok('/v1/report', json => $minimum_report)->status_is(201);
   $t->json_like('/0', qr{.{32}}, 'returns the report UUID');
@@ -54,6 +55,27 @@ subtest 'report_get' => sub {
 
   # XXX: should work for both lc $uuid and uc $uuid
   # XXX: should handle 404s
+};
+
+subtest 'report_list' => sub {
+  my $tempdir = File::Temp->newdir;
+  my $t = Test::Mojo->new('CPAN::Testers::Collector', {
+    storage => {
+      root => $tempdir->dirname,
+    },
+  });
+
+  my $uuid = Data::GUID->new;
+  my $dt = Time::Piece->new;
+  $t->app->storage->write( $uuid => encode_json( $minimum_report ), timestamp => $dt );
+
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d'))->status_is(200)->json_is([$minimum_report]);
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H'))->status_is(200)->json_is([$minimum_report]);
+  $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H/%M'))->status_is(200)->json_is([$minimum_report]);
+
+  # XXX: check invalid date/time
+  # XXX: check date/time with no reports
+  # TODO: paginate with `next` link header
 };
 
 done_testing;

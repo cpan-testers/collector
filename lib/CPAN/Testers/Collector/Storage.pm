@@ -14,10 +14,12 @@ with some metadata for basic synchronization querying.
 
 =cut
 
+use v5.40;
 use Mojo::Base -base, -signatures;
 use Mojo::File qw( path );
 use Time::Piece;
 use Scalar::Util qw( blessed );
+use Log::Any qw( $LOG );
 
 =attr root
 
@@ -162,7 +164,17 @@ sub list( $self, %search ) {
 }
 
 sub _to_tp( $maybe_tp ) {
-    return blessed $maybe_tp ? $maybe_tp : Time::Piece->strptime( $maybe_tp, '%Y-%m-%dT%H:%M:%S' );
+  if (blessed $maybe_tp) {
+    return $maybe_tp;
+  }
+  try {
+    my $tp = Time::Piece->strptime( $maybe_tp, '%Y-%m-%dT%H:%M:%S%z' );
+    return $tp;
+  }
+  catch ($e) {
+    $LOG->warning( qq{Error parsing date/time}, { dt => "$maybe_tp", error => $e });
+    die $e;
+  }
 }
 
 1;

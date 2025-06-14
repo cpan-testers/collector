@@ -52,11 +52,26 @@ sub report_get( $c ) {
 
 =method report_list
 
-List CPAN Testers reports as JSON lines.
+List CPAN Testers reports as a JSON array.
 
 =cut
 
 sub report_list( $c ) {
+  return if !$c->_validate;
+  my ($year, $mon, $day, $hour, $min) = $c->stash->@{qw(year month day hour minute)};
+
+  my $format = "%04d-%02d-%02dT%02d:%02d:%02d%s";
+  my $from = sprintf $format, $year, $mon, $day, $hour // 0, $min // 0, 0, '+0000';
+  my $to = sprintf $format, $year, $mon, $day, $hour // 23, $min // 59, 59, '+0000';
+
+  my @uuids = $c->storage->list( from => $from, to => $to );
+  my @reports;
+  for my $uuid ( @uuids ) {
+    push @reports, $c->storage->read( $uuid );
+  }
+
+  $c->res->headers->content_type('application/json');
+  $c->render( data => "[\n" . join( ",\n", @reports ) . "\n]\n" );
 }
 
 1;
