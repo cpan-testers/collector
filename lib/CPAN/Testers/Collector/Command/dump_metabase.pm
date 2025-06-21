@@ -15,15 +15,21 @@ use CPAN::Testers::Collector::Storage;
 use CPAN::Testers::Schema;
 use JSON::XS qw( decode_json encode_json );
 use Log::Any qw( $LOG );
+use IO::Async::Routine;
+use IO::Async::Channel;
+use IO::Async::Loop;
 
+# The main loop will fetch from the Metabase and hand off processing
+# each report to an async worker.
 sub run ($self, @args) {
   my %opt = (
     raw => 0,
     max => 2_000_000_000, # High enough to get all of them
     page => 5000,
+    jobs => 10,
   );
 
-  GetOptionsFromArray(\@args, \%opt, 'raw|r', 'max=i', 'page=i' ) or pod2usage(1);
+  GetOptionsFromArray(\@args, \%opt, 'raw|r', 'max=i', 'page=i', 'jobs=i' ) or pod2usage(1);
   $LOG->info('Starting ' . __PACKAGE__ );
   my ( $start_id ) = @args;
   $start_id //= 0;
@@ -32,32 +38,92 @@ sub run ($self, @args) {
   $LOG->info('Connecting to CPAN::Testers::Schema');
   my $schema = CPAN::Testers::Schema->connect_from_config;
   my $rs = $schema->resultset('TestReport');
-  my $total_processed = 0;
-  my $got_rows = 0;
+
+  $LOG->info('Spawning workers');
+  my $loop = IO::Async::Loop->new;
+  my %worker_ch;
+  my %done_ch;
+  for my $worker_id ( 0..$opt{jobs}-1 ) {
+    my $done_ch = IO::Async::Channel->new;
+    my $worker_ch = IO::Async::Channel->new;
+    my $worker = IO::Async::Routine->new(
+       channels_in  => [ $worker_ch ],
+       channels_out => [ $done_ch ],
+       code => sub {
+         $LOG->debug('Worker loop start', { worker_id => $worker_id });
+         while (my $mb_row = $worker_ch->recv) {
+           $LOG->debug('Worker received', { worker_id => $worker_id, uuid => $mb_row->{guid} });
+           write_report($rdb, $rs, $mb_row, %opt );
+           $done_ch->send($worker_id);
+           $LOG->debug('Worker wrote report', { worker_id => $worker_id, uuid => $mb_row->{guid} });
+         }
+	       $LOG->debug('Worker loop end', { worker_id => $worker_id });
+	       return 0;
+       },
+       on_finish => sub {
+	       $LOG->debug('Worker ended', { worker_id => $worker_id });
+       },
+    );
+    $worker_ch{ $worker_id } = $worker_ch;
+    $done_ch{ $worker_id } = $done_ch;
+    $loop->add( $worker );
+  }
 
   # Start crawling through the metabase.metabase table
   $LOG->info('Connecting to Metabase');
   my $dbi = DBI->connect("dbi:mysql:mysql_read_default_file=$ENV{HOME}/.cpanstats.cnf;mysql_read_default_group=application;database=metabase");
-  while ( $total_processed <= 0 || $got_rows >= $opt{page} ) {
-    $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
-    my $sth = $dbi->prepare('SELECT * FROM metabase.metabase WHERE id >= ? LIMIT ' . $opt{page});
-    $sth->execute($start_id);
-    $got_rows = 0;
-    while ( my $mb_row = $sth->fetchrow_hashref ) {
-      $total_processed++;
-      $got_rows++;
-      if ( $opt{raw} ) {
-	$rdb->write( "$mb_row->{guid}.metabase", encode_json( $mb_row ), timestamp => Time::Piece->new( $mb_row->{updated} ) );
-      }
-      my $metabase_report = $rs->parse_metabase_report( $mb_row );
-      my $test_report_row = $rs->convert_metabase_report( $metabase_report );
-      $rdb->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ), timestamp => $test_report_row->{created} );
-      $start_id = $mb_row->{id} + 1;
-    }
-    $LOG->info( "Read rows from Metabase", { got_rows => $got_rows, page_size => $opt{page}, next_start_id => $start_id });
-    last if $total_processed >= $opt{max};
+  my $sth = $dbi->prepare('SELECT * FROM metabase.metabase WHERE id >= ? LIMIT ' . $opt{page});
+  my $total_processed = 0;
+  my $got_rows = 0;
+
+  $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
+  $sth->execute($start_id);
+  for my $worker_id ( keys %worker_ch ) {
+    my $mb_row = $sth->fetchrow_hashref;
+    last if !$mb_row;
+    $got_rows++;
+    $start_id = $mb_row->{id} + 1;
+
+    # Let a worker signal it is done
+    $done_ch{$worker_id}->configure(on_recv => sub {
+		  my ($ch, $worker_id) = @_;
+	    $LOG->debug( "Manager receive done", { worker_id => $worker_id } );
+	    $total_processed++;
+	    # ... and then add another
+	    my $mb_row = $sth->fetchrow_hashref;
+	    if (!$mb_row && $got_rows >= $opt{page}) {
+	      # We're out of rows on this execution, so let's find the next page
+	      $LOG->info( "Read rows from Metabase", { got_rows => $got_rows, page_size => $opt{page}, next_start_id => $start_id });
+	      return if $total_processed >= $opt{max};
+
+	      $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
+	      $got_rows = 0;
+	      $sth->execute($start_id);
+	      $mb_row = $sth->fetchrow_hashref;
+	    }
+	    return if !$mb_row;
+	    $got_rows++;
+	    $start_id = $mb_row->{id} + 1;
+	    $LOG->debug( "Manager send", { worker_id => $worker_id } );
+	    $worker_ch{$worker_id}->send($mb_row);
+    });
+    # Add an initial row to each worker
+    $LOG->debug( "Manager send", { worker_id => $worker_id, uuid => $mb_row->{guid} } );
+    $worker_ch{$worker_id}->send($mb_row);
   }
+
+  $LOG->debug('Starting loop');
+  $loop->run;
   $LOG->info("Finished converting Metabase");
 
   return 0;
+}
+
+sub write_report( $rdb, $rs, $mb_row, %opt ) {
+  if ( $opt{raw} ) {
+    $rdb->write( "$mb_row->{guid}.metabase", encode_json( $mb_row ), timestamp => Time::Piece->new( $mb_row->{updated} ) );
+  }
+  my $metabase_report = $rs->parse_metabase_report( $mb_row );
+  my $test_report_row = $rs->convert_metabase_report( $metabase_report );
+  $rdb->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ), timestamp => $test_report_row->{created} );
 }
