@@ -139,6 +139,7 @@
       "properties": {
         "name":    { "type": "string" },
         "version": { "type": "string" },
+        "path": { "type": "string" },
         "prerequisites": {
           "description": "A list of prerequisites",
           "type": "array",

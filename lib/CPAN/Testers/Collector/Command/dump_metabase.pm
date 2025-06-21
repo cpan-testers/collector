@@ -20,15 +20,15 @@ sub run ($self, @args) {
   my %opt = (
     raw => 0,
     max => 2_000_000_000, # High enough to get all of them
-    page => 100,
+    page => 5000,
   );
 
   GetOptionsFromArray(\@args, \%opt, 'raw|r', 'max=i', 'page=i' ) or pod2usage(1);
   $LOG->info('Starting ' . __PACKAGE__ );
-  my ( $reports_root, $start_id ) = @args;
+  my ( $start_id ) = @args;
   $start_id //= 0;
 
-  my $rdb = CPAN::Testers::Collector::Storage->new( root => $reports_root );
+  my $rdb = $self->app->storage;
   $LOG->info('Connecting to CPAN::Testers::Schema');
   my $schema = CPAN::Testers::Schema->connect_from_config;
   my $rs = $schema->resultset('TestReport');
@@ -37,7 +37,7 @@ sub run ($self, @args) {
 
   # Start crawling through the metabase.metabase table
   $LOG->info('Connecting to Metabase');
-  my $dbi = DBI->connect('dbi:mysql:mysql_read_default_file=~/.cpanstats.cnf;mysql_read_default_group=application;database=metabase');
+  my $dbi = DBI->connect("dbi:mysql:mysql_read_default_file=$ENV{HOME}/.cpanstats.cnf;mysql_read_default_group=application;database=metabase");
   while ( $total_processed <= 0 || $got_rows >= $opt{page} ) {
     $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
     my $sth = $dbi->prepare('SELECT * FROM metabase.metabase WHERE id >= ? LIMIT ' . $opt{page});

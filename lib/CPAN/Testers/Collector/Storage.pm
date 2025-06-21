@@ -43,6 +43,7 @@ C<%opt> is an optional set of metadata with the following keys:
 =cut
 
 sub write( $self, $uuid, $content, %opt ) {
+    $LOG->info('Writing to storage', {uuid => $uuid});
     my $path = $self->_uuid_path($uuid);
     $path->dirname->make_path;
     $path->spew($content);
