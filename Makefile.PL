@@ -24,13 +24,17 @@ my %WriteMakefileArgs = (
   "MIN_PERL_VERSION" => "5.040",
   "NAME" => "CPAN::Testers::Collector",
   "PREREQ_PM" => {
+    "CPAN::Testers::Schema" => "0.028",
+    "DBI" => 0,
     "Data::Dumper" => 0,
+    "Data::GUID" => 0,
     "File::Share" => 0,
     "IO::Async::Loop::Mojo" => 0,
     "JSON::XS" => 0,
     "Log::Any" => "1.718",
     "Log::Any::Adapter::OpenTelemetry" => 0,
     "Mojolicious" => 9,
+    "Mojolicious::Plugin::Moai" => 0,
     "Mojolicious::Plugin::OpenAPI::Modern" => 0,
     "Mojolicious::Plugin::OpenTelemetry" => 0,
     "OpenAPI::Modern" => 0,
@@ -45,13 +49,16 @@ my %WriteMakefileArgs = (
   },
   "VERSION" => "0.001",
   "test" => {
-    "TESTS" => "t/*.t t/collector/*.t"
+    "TESTS" => "t/*.t t/collector/*.t t/collector/controller/*.t"
   }
 );
 
 
 my %FallbackPrereqs = (
+  "CPAN::Testers::Schema" => "0.028",
+  "DBI" => 0,
   "Data::Dumper" => 0,
+  "Data::GUID" => 0,
   "ExtUtils::MakeMaker" => 0,
   "File::Share" => 0,
   "File::Spec" => 0,
@@ -62,6 +69,7 @@ my %FallbackPrereqs = (
   "Log::Any" => "1.718",
   "Log::Any::Adapter::OpenTelemetry" => 0,
   "Mojolicious" => 9,
+  "Mojolicious::Plugin::Moai" => 0,
   "Mojolicious::Plugin::OpenAPI::Modern" => 0,
   "Mojolicious::Plugin::OpenTelemetry" => 0,
   "OpenAPI::Modern" => 0,
