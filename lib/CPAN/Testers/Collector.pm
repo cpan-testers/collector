@@ -136,20 +136,16 @@ sub startup ( $app ) {
   # schema in the right place with the right URL so it doesn't cause
   # a web request that might fail (it'd potentially be a different
   # version entirely...)
-  my $oapi_path = Mojo::File->new( dist_file( 'CPAN-Testers-Collector' => 'public/api/v1.json' ) );
-  my $oapi = OpenAPI::Modern->new(
-    openapi_schema => decode_json( $oapi_path->slurp ),
-    openapi_uri => 'https://collector.cpantesters.org/api/v1.json',
-  );
+  $app->plugin( 'OpenAPI::Modern' => {
+    document_uri => 'api/v1.json',
+    document_filename => dist_file('CPAN-Testers-Collector' => 'public/api/v1.json'),
+  } );
+
   my $schema_path = Mojo::File->new( dist_file( 'CPAN-Testers-Collector' => 'public/schema/v1/report.json' ) );
-  $oapi->evaluator->add_schema(
-    'https://collector.cpantesters.org/schema/v1/report.json',
+  $app->openapi->evaluator->add_schema(
+    'schema/v1/report.json',
     decode_json( $schema_path->slurp ),
   );
-
-  $app->plugin( 'OpenAPI::Modern' => {
-    openapi_obj => $oapi,
-  } );
 }
 
 1;

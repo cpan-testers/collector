@@ -12,6 +12,7 @@ use Log::Any qw( $LOG );
 use Data::GUID;
 
 sub _validate($c) {
+  $LOG->debug('validating', { url => $c->req->url, operation_id => $c->stash->{operation_id} });
   my $result = $c->openapi->validate_request($c->req, {operation_id => $c->stash->{operation_id}});
   if ($result->valid) {
     return true
