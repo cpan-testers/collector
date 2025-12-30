@@ -1,3 +1,4 @@
 .build
 *.tar.gz
 /CPAN-Testers-Collector-*
+Makefile
