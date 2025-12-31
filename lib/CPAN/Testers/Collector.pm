@@ -20,14 +20,25 @@ like:
 
   # collector.conf
   {
-      storage_root => '/mnt/reports',
+      storage => {
+        Local => '/mnt/reports',
+      },
+      index => {
+        SQLite => ':temp:',
+      },
   }
 
 The possible configuration keys are below:
 
 =over
 
-=item *
+=item * storage
+
+Configure where reports are stored. A hash of arguments for L<CPAN::Testers::Collector::Storage/new>.
+
+=item * index
+
+Configure how reports are indexed. A hash of arguments for L<CPAN::Testers::Collector::Index/new>.
 
 =back
 
@@ -91,7 +102,7 @@ sub startup ( $app ) {
   $app->plugin( Config => {
     default => {
       storage => {
-        root => './var/reports',
+        Local => './var/reports',
       },
       index => {
         SQLite => ':temp:',

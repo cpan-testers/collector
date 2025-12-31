@@ -36,10 +36,10 @@ my $minimum_report = {
 my $tempdir = File::Temp->newdir;
 my $t = Test::Mojo->new('CPAN::Testers::Collector', {
   storage => {
-    root => $tempdir->dirname,
+    Local => $tempdir->dirname,
   },
   index => {
-    SQLite => Mojo::SQLite->new,
+    SQLite => Mojo::SQLite->new(':temp:'),
   },
 });
 

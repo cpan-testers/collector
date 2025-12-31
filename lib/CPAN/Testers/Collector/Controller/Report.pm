@@ -53,7 +53,7 @@ sub report_get( $c ) {
 
 =method report_list
 
-List CPAN Testers reports as a JSON array.
+List CPAN Testers report UUIDs as a JSON array.
 
 =cut
 

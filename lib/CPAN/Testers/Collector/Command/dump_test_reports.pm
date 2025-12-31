@@ -27,7 +27,7 @@ sub run ($self, @args) {
   my ( $reports_root, $start_dt ) = @args;
   $start_dt //= '2000-01-01T00:00:00';
 
-  my $rdb = CPAN::Testers::Collector::Storage->new( root => $reports_root );
+  my $rdb = CPAN::Testers::Collector::Storage->new( Local => $reports_root );
   $LOG->info('Connecting to CPAN::Testers::Schema');
   my $schema = CPAN::Testers::Schema->connect_from_config;
   my $rs = $schema->resultset('TestReport');
