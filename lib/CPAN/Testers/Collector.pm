@@ -56,6 +56,7 @@ use Mojo::File qw( path );
 use Mojo::JSON qw( decode_json );
 use OpenAPI::Modern;
 use CPAN::Testers::Collector::Storage;
+use CPAN::Testers::Collector::Index;
 
 =method startup
 
@@ -92,6 +93,9 @@ sub startup ( $app ) {
       storage => {
         root => './var/reports',
       },
+      index => {
+        SQLite => ':temp:',
+      },
     },
   } );
 
@@ -102,6 +106,13 @@ sub startup ( $app ) {
       %{ $c->config->{storage} || {} },
     );
     return $storage;
+  });
+
+  $app->helper( index => sub ($c) {
+    state $index = CPAN::Testers::Collector::Index->new(
+      %{ $c->config->{index} || {} },
+    );
+    return $index;
   });
 
   # Allow CORS for everyone

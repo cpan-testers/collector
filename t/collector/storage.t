@@ -26,11 +26,6 @@ subtest 'write report' => sub {
     my $got = path($tmp->dirname, 'report', $xx, $yy, $uuid);
     ok -e $got, 'report file exists';
     is $got->slurp, $content, 'report content correct';
-
-    my $meta = path($tmp->dirname, '_meta', 'timestamp', '2025', '01', '01', '00', '01', '00');
-    ok -e $meta, 'meta timestamp file exists' or say STDERR
-    path($tmp->dirname, 'timestamp')->list({ dir => 1 })->each;
-    is $meta->slurp, "$uuid\n", 'meta contents correct';
 };
 
 subtest 'read report' => sub {
@@ -47,32 +42,6 @@ subtest 'read report' => sub {
     my $got_content = $rd->read( $uuid );
 
     is $got_content, $content;
-};
-
-subtest 'list reports by timestamp' => sub {
-    my $tmp = File::Temp->newdir;
-    my $rd = CPAN::Testers::Collector::Storage->new( root => $tmp->dirname );
-    my $day = '2025-01-01';
-
-    my @uuids = ();
-    for my $i (0..20) {
-        my $uuid = lc guid_string();
-        push @uuids, $uuid;
-        my $content = 'report';
-        my $timestamp = sprintf '%sT%02d:01:00', $day, $i;
-        $rd->write( $uuid, $content, timestamp => $timestamp );
-    }
-
-    subtest 'get all' => sub {
-        my @got_uuids = $rd->list( from => "${day}T00:00:00", to => "${day}T23:59:59" );
-        is \@got_uuids, \@uuids;
-    };
-
-    subtest 'get some hours' => sub {
-        my @got_uuids = $rd->list( from => "${day}T05:00:00", to => "${day}T08:59:59" );
-        is \@got_uuids, [@uuids[5..8]];
-    };
-
 };
 
 done_testing;

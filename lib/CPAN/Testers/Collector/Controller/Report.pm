@@ -65,7 +65,7 @@ sub report_list( $c ) {
   my $from = sprintf $format, $year, $mon, $day, $hour // 0, $min // 0, 0, '+0000';
   my $to = sprintf $format, $year, $mon, $day, $hour // 23, $min // 59, 59, '+0000';
 
-  my @uuids = $c->storage->list( from => $from, to => $to );
+  my @uuids = $c->index->select( from => $from, to => $to )->each;
   $c->render( json => \@uuids );
 }
 

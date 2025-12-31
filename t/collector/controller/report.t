@@ -6,6 +6,7 @@ use File::Temp;
 use Data::GUID;
 use Mojo::JSON qw( encode_json );
 use Time::Piece;
+use Mojo::SQLite;
 
 my $minimum_report = {
   reporter => {
@@ -37,6 +38,9 @@ my $t = Test::Mojo->new('CPAN::Testers::Collector', {
   storage => {
     root => $tempdir->dirname,
   },
+  index => {
+    SQLite => Mojo::SQLite->new,
+  },
 });
 
 subtest 'report_post' => sub {
@@ -58,16 +62,9 @@ subtest 'report_get' => sub {
 };
 
 subtest 'report_list' => sub {
-  my $tempdir = File::Temp->newdir;
-  my $t = Test::Mojo->new('CPAN::Testers::Collector', {
-    storage => {
-      root => $tempdir->dirname,
-    },
-  });
-
   my $uuid = Data::GUID->new;
   my $dt = Time::Piece->new;
-  $t->app->storage->write( $uuid => encode_json( $minimum_report ), timestamp => $dt );
+  $t->app->index->insert( $uuid => $dt->datetime );
 
   $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d'))->status_is(200)->json_is([$uuid]);
   $t->get_ok('/v1/timestamp/' . $dt->strftime('%Y/%m/%d/%H'))->status_is(200)->json_is([$uuid]);
