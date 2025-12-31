@@ -195,7 +195,7 @@
         "schema": {
           "type": "string",
           "description": "A two-digit day",
-          "pattern": "^([0-2][1-9]|3[0-1])$"
+          "pattern": "^(0[1-9]|[1-2][0-9]|3[0-1])$"
         }
       },
       "hour": {
@@ -205,7 +205,7 @@
         "schema": {
           "type": "string",
           "description": "A two-digit hour",
-          "pattern": "^([0-1][1-9]|2[0-3])$"
+          "pattern": "^([0-1][0-9]|2[0-3])$"
         }
       },
       "minute": {
