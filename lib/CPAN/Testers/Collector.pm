@@ -148,6 +148,7 @@ sub startup ( $app ) {
   # specifying the operation_id stash value. By the time the `under` is
   # called, the stash for the final endpoint hasn't been resolved yet.
   $r->post('/v1/report')->to('report#report_post', operation_id => 'report_post');
+  $r->post('/v1/report/:uuid')->to('report#report_post', operation_id => 'report_post_id');
   $r->get('/v1/report/:uuid')->to('report#report_get', operation_id => 'report_get');
   $r->get('/v1/timestamp/:year/:month/:day')->to('report#report_list', operation_id => 'report_list_day');
   $r->get('/v1/timestamp/:year/:month/:day/:hour')->to('report#report_list', operation_id => 'report_list_hour');

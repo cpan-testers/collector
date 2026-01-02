@@ -30,7 +30,7 @@ Submit a new CPAN Testers report.
 
 sub report_post( $c ) {
   return if !$c->_validate;
-  my $uuid = Data::GUID->new->as_string;
+  my $uuid = $c->param('uuid') || Data::GUID->new->as_string;
   $c->storage->write( $uuid, $c->req->body );
   return $c->render(
     status => 201,

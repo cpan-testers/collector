@@ -64,21 +64,21 @@
     },
 
     "/v1/report/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "description": "The report UUID in standard hex format (like 01be7be2-2aec-11e7-a074-e1beba07c9dd)",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
       "get": {
         "tags": ["Report"],
         "description": "Fetch report data from CPAN Testers",
         "operationId": "report_get",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "The report UUID in standard hex format (like 01be7be2-2aec-11e7-a074-e1beba07c9dd)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "Report details",
@@ -96,6 +96,48 @@
           },
           "404": {
             "description": "The specified report was not found",
+            "$ref": "#/components/responses/default"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Report"],
+        "description": "Submit a new report to CPAN Testers",
+        "operationId": "report_post_id",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "../schema/v1/report.json"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "report was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
+              }
+            }
+          },
+          "303": {
+            "description": "duplicate report",
+            "$ref": "#/components/responses/default"
+          },
+          "400": {
+            "description": "report contains errors",
+            "$ref": "#/components/responses/default"
+          },
+          "default": {
+            "description": "unexpected error",
             "$ref": "#/components/responses/default"
           }
         }

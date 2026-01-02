@@ -52,6 +52,13 @@ subtest 'report_post' => sub {
   # XXX: should handle validation failures
 };
 
+subtest 'report_post with ID' => sub {
+  my $uuid = Data::GUID->new;
+  $t->post_ok('/v1/report/' . $uuid, json => $minimum_report)->status_is(201);
+  $t->json_is('/0', $uuid, 'returns the report UUID');
+  ok $t->app->storage->read( $uuid ), 'report exists in storage';
+};
+
 subtest 'report_get' => sub {
   my $uuid = Data::GUID->new;
   $t->app->storage->write( $uuid => encode_json( $minimum_report ) );
