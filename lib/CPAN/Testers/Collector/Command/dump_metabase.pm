@@ -23,18 +23,17 @@ use IO::Async::Loop;
 # each report to an async worker.
 sub run ($self, @args) {
   my %opt = (
-    raw => 0,
     max => 2_000_000_000, # High enough to get all of them
     page => 5000,
     jobs => 10,
   );
 
-  GetOptionsFromArray(\@args, \%opt, 'raw|r', 'max=i', 'page=i', 'jobs=i' ) or pod2usage(1);
+  GetOptionsFromArray(\@args, \%opt, 'max=i', 'page=i', 'jobs=i' ) or pod2usage(1);
   $LOG->info('Starting ' . __PACKAGE__ );
   my ( $start_id ) = @args;
   $start_id //= 0;
 
-  my $rdb = $self->app->storage;
+  my $storage = $self->app->storage;
   $LOG->info('Connecting to CPAN::Testers::Schema');
   my $schema = CPAN::Testers::Schema->connect_from_config;
   my $rs = $schema->resultset('TestReport');
@@ -53,7 +52,7 @@ sub run ($self, @args) {
          $LOG->debug('Worker loop start', { worker_id => $worker_id });
          while (my $mb_row = $worker_ch->recv) {
            $LOG->debug('Worker received', { worker_id => $worker_id, uuid => $mb_row->{guid} });
-           write_report($rdb, $rs, $mb_row, %opt );
+           write_report($storage, $rs, $mb_row, %opt );
            $done_ch->send($worker_id);
            $LOG->debug('Worker wrote report', { worker_id => $worker_id, uuid => $mb_row->{guid} });
          }
@@ -71,7 +70,7 @@ sub run ($self, @args) {
 
   # Start crawling through the metabase.metabase table
   $LOG->info('Connecting to Metabase');
-  my $dbi = DBI->connect("dbi:mysql:mysql_read_default_file=$ENV{HOME}/.cpanstats.cnf;mysql_read_default_group=application;database=metabase");
+  my $dbi = $schema->storage->dbh;
   my $sth = $dbi->prepare('SELECT * FROM metabase.metabase WHERE id >= ? LIMIT ' . $opt{page});
   my $total_processed = 0;
   my $got_rows = 0;
@@ -119,11 +118,8 @@ sub run ($self, @args) {
   return 0;
 }
 
-sub write_report( $rdb, $rs, $mb_row, %opt ) {
-  if ( $opt{raw} ) {
-    $rdb->write( "$mb_row->{guid}.metabase", encode_json( $mb_row ), timestamp => Time::Piece->new( $mb_row->{updated} ) );
-  }
+sub write_report( $storage, $rs, $mb_row, %opt ) {
   my $metabase_report = $rs->parse_metabase_report( $mb_row );
   my $test_report_row = $rs->convert_metabase_report( $metabase_report );
-  $rdb->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ), timestamp => $test_report_row->{created} );
+  $storage->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
 }

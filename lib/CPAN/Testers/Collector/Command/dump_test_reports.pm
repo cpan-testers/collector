@@ -27,7 +27,7 @@ sub run ($self, @args) {
   my ( $reports_root, $start_dt ) = @args;
   $start_dt //= '2000-01-01T00:00:00';
 
-  my $rdb = CPAN::Testers::Collector::Storage->new( Local => $reports_root );
+  my $storage = $self->app->storage;
   $LOG->info('Connecting to CPAN::Testers::Schema');
   my $schema = CPAN::Testers::Schema->connect_from_config;
   my $rs = $schema->resultset('TestReport');
@@ -45,7 +45,7 @@ sub run ($self, @args) {
     while ( my $row = $sth->fetchrow_hashref ) {
       $total_processed++;
       $got_rows++;
-      $rdb->write( $row->{id}, encode_json( $row->{report} ), timestamp => $row->{created} );
+      $storage->write( $row->{id}, encode_json( $row->{report} ) );
       $start_dt = $row->{created};
     }
     $LOG->info( "Read rows", { got_rows => $got_rows, page_size => $opt{page}, next_start_dt => $start_dt });
