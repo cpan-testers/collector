@@ -16,6 +16,7 @@ use CPAN::Testers::Collector::Storage::S3;
 
 my %create_args = (
   endpoint => 'localhost',
+  region => 'us-sea-1',
   access_key_id => 'fake',
   secret_access_key => 'fake also',
   bucket => 'reports-v3',
@@ -29,14 +30,10 @@ subtest 'write report' => sub {
         bucket => sub ($aws, $name) {
           $got_bucket = $name;
           return mock { name => $name } => add => [
-            file => sub ($bucket, $key) {
-              $got_key = $key;
-              return mock { bucket => $bucket, key => $key }, add => [
-                contents => sub ($self, $new_content) {
-                  $got_content = $new_content->$*;
-                }
-              ];
-            }
+            add_file => sub ($bucket, %args) {
+              $got_key = $args{key};
+              $got_content = $args{contents}->$*;
+            },
           ];
         },
       ];

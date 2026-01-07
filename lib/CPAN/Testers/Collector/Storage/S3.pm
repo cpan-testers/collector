@@ -37,6 +37,14 @@ The S3-compatible endpoint.
 
 has endpoint => sub { die 'endpoint is required' };
 
+=attr region
+
+The S3 region.
+
+=cut
+
+has region => sub { die 'region is required' };
+
 =attr access_key_id
 
 The (public) access key. Should be read/write for the bucket.
@@ -67,8 +75,10 @@ has bucket => sub { die 'bucket is required' };
 has _svc => sub ($self) {
   AWS::S3->new(
     endpoint => $self->endpoint,
+    region => $self->region,
     access_key_id => $self->access_key_id,
     secret_access_key => $self->secret_access_key,
+    secure => 1,
   )
 };
 
@@ -86,7 +96,10 @@ used as the path to write to. C<$content> is a string of content.
 
 sub write( $self, $uuid, $content ) {
   $LOG->info('Writing to storage', {uuid => $uuid, endpoint => $self->endpoint, bucket => $self->bucket });
-  $self->_bucket->file( $uuid )->contents(\$content);
+  $self->_bucket->add_file(
+    key => $uuid,
+    contents => \$content,
+  );
 }
 
 =method read
