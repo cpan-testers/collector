@@ -33,9 +33,18 @@ sub run ($self, @args) {
   my ( $start_id ) = @args;
   $start_id //= 0;
 
-  my $storage = $self->app->storage;
-  $LOG->info('Connecting to CPAN::Testers::Schema');
-  my $schema = CPAN::Testers::Schema->connect_from_config;
+  my $app = $self->app;
+  my $storage = $app->storage;
+  my $schema;
+  if ( $app->config->{db} ) {
+      $LOG->info("Connecting to " . $app->config->{db}{dsn});
+      $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
+  }
+  else {
+    $LOG->info('Connecting to CPAN::Testers::Schema');
+    $schema = CPAN::Testers::Schema->connect_from_config;
+  }
+
   my $rs = $schema->resultset('TestReport');
 
   $LOG->info('Spawning workers');

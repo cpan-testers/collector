@@ -27,9 +27,18 @@ sub run ($self, @args) {
   my ( $reports_root, $start_dt ) = @args;
   $start_dt //= '2000-01-01T00:00:00';
 
-  my $storage = $self->app->storage;
-  $LOG->info('Connecting to CPAN::Testers::Schema');
-  my $schema = CPAN::Testers::Schema->connect_from_config;
+  my $app = $self->app;
+  my $storage = $app->storage;
+  my $schema;
+  if ( $app->config->{db} ) {
+      $LOG->info("Connecting to " . $app->config->{db}{dsn});
+      $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
+  }
+  else {
+    $LOG->info('Connecting to CPAN::Testers::Schema');
+    $schema = CPAN::Testers::Schema->connect_from_config;
+  }
+
   my $rs = $schema->resultset('TestReport');
   my $total_processed = 0;
   my $got_rows = 0;
