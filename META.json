@@ -4,7 +4,7 @@
       "Doug Bell <preaction@cpan.org>"
    ],
    "dynamic_config" : 0,
-   "generated_by" : "Dist::Zilla version 6.033, CPAN::Meta::Converter version 2.150010",
+   "generated_by" : "Dist::Zilla version 6.036, CPAN::Meta::Converter version 2.150010",
    "license" : [
       "perl_5"
    ],
@@ -32,6 +32,7 @@
       },
       "runtime" : {
          "requires" : {
+            "AWS::S3" : "1.00",
             "CPAN::Testers::Schema" : "0.028",
             "DBI" : "0",
             "Data::Dumper" : "0",
@@ -59,6 +60,7 @@
             "File::Spec" : "0",
             "IO::Handle" : "0",
             "IPC::Open3" : "0",
+            "Mojo::SQLite" : "0",
             "Test::More" : "0"
          }
       }
@@ -80,8 +82,20 @@
          "file" : "lib/CPAN/Testers/Collector/Controller/Report.pm",
          "version" : "0.001"
       },
+      "CPAN::Testers::Collector::Index" : {
+         "file" : "lib/CPAN/Testers/Collector/Index.pm",
+         "version" : "0.001"
+      },
       "CPAN::Testers::Collector::Storage" : {
          "file" : "lib/CPAN/Testers/Collector/Storage.pm",
+         "version" : "0.001"
+      },
+      "CPAN::Testers::Collector::Storage::Local" : {
+         "file" : "lib/CPAN/Testers/Collector/Storage/Local.pm",
+         "version" : "0.001"
+      },
+      "CPAN::Testers::Collector::Storage::S3" : {
+         "file" : "lib/CPAN/Testers/Collector/Storage/S3.pm",
          "version" : "0.001"
       }
    },
@@ -99,8 +113,8 @@
    },
    "version" : "0.001",
    "x_authority" : "cpan:PREACTION",
-   "x_generated_by_perl" : "v5.40.2",
-   "x_serialization_backend" : "Cpanel::JSON::XS version 4.39",
+   "x_generated_by_perl" : "v5.42.0",
+   "x_serialization_backend" : "Cpanel::JSON::XS version 4.40",
    "x_spdx_expression" : "Artistic-1.0-Perl OR GPL-1.0-or-later"
 }
 

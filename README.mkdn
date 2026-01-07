@@ -33,12 +33,23 @@ like:
 
     # collector.conf
     {
-        storage_root => '/mnt/reports',
+        storage => {
+          Local => '/mnt/reports',
+        },
+        index => {
+          SQLite => ':temp:',
+        },
     }
 
 The possible configuration keys are below:
 
--
+- storage
+
+    Configure where reports are stored. A hash of arguments for ["new" in CPAN::Testers::Collector::Storage](https://metacpan.org/pod/CPAN%3A%3ATesters%3A%3ACollector%3A%3AStorage#new).
+
+- index
+
+    Configure how reports are indexed. A hash of arguments for ["new" in CPAN::Testers::Collector::Index](https://metacpan.org/pod/CPAN%3A%3ATesters%3A%3ACollector%3A%3AIndex#new).
 
 # SEE ALSO
 
