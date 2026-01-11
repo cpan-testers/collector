@@ -8,6 +8,7 @@ requires "DBIx::Connector" => "0";
 requires "Data::Dumper" => "0";
 requires "Data::GUID" => "0";
 requires "File::Share" => "0";
+requires "Future::AsyncAwait" => "0.52";
 requires "IO::Async::Loop::Mojo" => "0";
 requires "JSON::XS" => "0";
 requires "Log::Any" => "1.718";

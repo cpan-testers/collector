@@ -21,8 +21,5 @@ RUN --mount=type=cache,target=/root/.cpanm \
   cpanm -v --installdeps --notest .
 
 ADD ./ ./
-RUN --mount=type=cache,target=/root/.cpanm \
-  cpanm -v --notest .
-
 EXPOSE 3000
 CMD perl -Ilib script/collector daemon
