@@ -11,6 +11,7 @@ our $VERSION = '0.001';
 
 use Mojo::Base 'Mojolicious::Command', -signatures;
 use Getopt::Long qw( GetOptionsFromArray :config pass_through );
+use List::Util qw( max );
 use CPAN::Testers::Collector::Storage;
 use CPAN::Testers::Schema;
 use DBIx::Connector;
@@ -21,6 +22,8 @@ use YAML::XS qw( Dump );
 use POSIX;
 
 # The main loop will fetch from the Metabase and dump to object storage.
+# Dump will dump files to storage with a single page of rows
+# Then workers can read those files and fix them
 sub run ($self, @args) {
   my %opt = (
     page => 50000,
@@ -42,11 +45,26 @@ sub run ($self, @args) {
   $pm->set_waitpid_blocking_sleep(0);
 
   # Start crawling through the metabase.metabase table
-  $LOG->info('Connecting to Metabase');
-
-  # Dump will dump files to storage with a single page of rows
-  # Then workers can read those files and fix them
   my ( $min, $max ) = $conn->dbh->selectrow_array( 'SELECT MIN(id), MAX(id) FROM metabase.metabase' );
+
+  # List the files from the S3 storage, so that we can re-start from where we left off.
+  my $s3 = $storage->driver;
+  my $cmd = join " ", "s3cmd", "ls", '--access_key', $s3->access_key_id, '--secret_key', $s3->secret_access_key, '--host', $s3->endpoint, '--host-bucket', q{'%(bucket)s.} . $s3->endpoint . q{'}, "s3://" . $s3->bucket;
+  my @lines = qx{$cmd};
+  my @files;
+  for my $line (@lines) {
+    my (undef, undef, undef, $uri) = split /\s+/, $line;
+    my ($file_path) = $uri =~ m{^s3://[^/]+/(.+)$};
+    push @files, $file_path;
+  }
+  if (@files) {
+    # Get the highest numeric ID from the filename
+    $min = max map { m{(\d+)} } @files;
+    # We don't need to dump the same file again
+    $min += $opt{page};
+  }
+  $LOG->info( "Dumping metabase", {min => $min, max => $max} );
+
   my $index = 1;
   my $start = $args[0] || ( $min - ( $min % $opt{page} ) );
   my $end = $start + $opt{page};
