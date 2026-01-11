@@ -91,7 +91,19 @@ sub startup ( $app ) {
     $LOG->$level(@lines);
   });
 
-  $app->plugin('OpenTelemetry');
+  # FIXME: I don't know why, but the OpenTelemetry plugin seems to make the process
+  # hang when running Command classes. This is especially noticable when using
+  # forked children, as the forked child never exits, and so the parent waits
+  # forever.
+  # I don't know if it was because I did not
+  # use the IO::Async::Loop::Mojo or if Command classes never start the loop
+  # and therefore something blocks until the loop is allowed to run. Either way,
+  # something in the OpenTelemetry space needs to detect that it is time to die,
+  # whether that's detecting global destruction or detecting that we aren't in
+  # the async loop and it shouldn't block until we are...
+  # Disabling the OpenTelemetry plugin until I no longer need Command classes or
+  # until I decide to figure out the real problem...
+  #$app->plugin('OpenTelemetry');
 
   unshift @{ $app->renderer->paths },
     path( dist_dir( 'CPAN-Testers-Collector' ), 'templates' );
@@ -107,16 +119,24 @@ sub startup ( $app ) {
       index => {
         SQLite => ':temp:',
       },
+      # A temporary dump of a block of Metabase records,
+      # for better parallelization of migration.
+      metabase_dump => {
+        Local => './var/metabase',
+      },
     },
   } );
 
   $app->plugin( Moai => [ 'Bootstrap4', { version => '4.4.1' } ] );
 
-  $app->helper( storage => sub ($c) {
-    state $storage = CPAN::Testers::Collector::Storage->new(
-      %{ $c->config->{storage} || {} },
+  # This initializes and returns Storage objects based on config keys.
+  # TODO: I really like this pattern of constructor arguments in config,
+  # so it might be nice to modularize it.
+  $app->helper( storage => sub ($c, $key='storage') {
+    state $storage = {};
+    return $storage->{$key} ||= CPAN::Testers::Collector::Storage->new(
+      %{ $c->config->{$key} || {} },
     );
-    return $storage;
   });
 
   $app->helper( index => sub ($c) {
