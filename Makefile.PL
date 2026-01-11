@@ -27,6 +27,7 @@ my %WriteMakefileArgs = (
     "AWS::S3" => "1.00",
     "CPAN::Testers::Schema" => "0.028",
     "DBI" => 0,
+    "DBIx::Connector" => 0,
     "Data::Dumper" => 0,
     "Data::GUID" => 0,
     "File::Share" => 0,
@@ -39,7 +40,8 @@ my %WriteMakefileArgs = (
     "Mojolicious::Plugin::OpenAPI::Modern" => 0,
     "Mojolicious::Plugin::OpenTelemetry" => 0,
     "OpenAPI::Modern" => 0,
-    "OpenTelemetry::SDK" => "0.027"
+    "OpenTelemetry::SDK" => "0.027",
+    "Parallel::ForkManager" => "2.04"
   },
   "TEST_REQUIRES" => {
     "ExtUtils::MakeMaker" => 0,
@@ -60,6 +62,7 @@ my %FallbackPrereqs = (
   "AWS::S3" => "1.00",
   "CPAN::Testers::Schema" => "0.028",
   "DBI" => 0,
+  "DBIx::Connector" => 0,
   "Data::Dumper" => 0,
   "Data::GUID" => 0,
   "ExtUtils::MakeMaker" => 0,
@@ -78,6 +81,7 @@ my %FallbackPrereqs = (
   "Mojolicious::Plugin::OpenTelemetry" => 0,
   "OpenAPI::Modern" => 0,
   "OpenTelemetry::SDK" => "0.027",
+  "Parallel::ForkManager" => "2.04",
   "Test::More" => 0
 );
 

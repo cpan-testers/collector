@@ -35,6 +35,7 @@
             "AWS::S3" : "1.00",
             "CPAN::Testers::Schema" : "0.028",
             "DBI" : "0",
+            "DBIx::Connector" : "0",
             "Data::Dumper" : "0",
             "Data::GUID" : "0",
             "File::Share" : "0",
@@ -48,6 +49,7 @@
             "Mojolicious::Plugin::OpenTelemetry" : "0",
             "OpenAPI::Modern" : "0",
             "OpenTelemetry::SDK" : "0.027",
+            "Parallel::ForkManager" : "2.04",
             "perl" : "5.040"
          }
       },

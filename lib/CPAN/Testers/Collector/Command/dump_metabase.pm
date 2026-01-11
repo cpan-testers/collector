@@ -13,122 +13,84 @@ use Mojo::Base 'Mojolicious::Command', -signatures;
 use Getopt::Long qw( GetOptionsFromArray :config pass_through );
 use CPAN::Testers::Collector::Storage;
 use CPAN::Testers::Schema;
+use DBIx::Connector;
 use JSON::XS qw( decode_json encode_json );
 use Log::Any qw( $LOG );
-use IO::Async::Routine;
-use IO::Async::Channel;
-use IO::Async::Loop;
+use Parallel::ForkManager;
+use YAML::XS qw( Dump );
+use POSIX;
 
-# The main loop will fetch from the Metabase and hand off processing
-# each report to an async worker.
+# The main loop will fetch from the Metabase and dump to object storage.
 sub run ($self, @args) {
   my %opt = (
-    max => 2_000_000_000, # High enough to get all of them
-    page => 5000,
+    page => 50000,
     jobs => 10,
   );
 
-  GetOptionsFromArray(\@args, \%opt, 'max=i', 'page=i', 'jobs=i' ) or pod2usage(1);
+  GetOptionsFromArray(\@args, \%opt, 'page=i', 'jobs=i') or pod2usage(1);
   $LOG->info('Starting ' . __PACKAGE__ );
-  my ( $start_id ) = @args;
-  $start_id //= 0;
 
   my $app = $self->app;
-  my $storage = $app->storage;
-  my $schema;
-  if ( $app->config->{db} ) {
-      $LOG->info("Connecting to " . $app->config->{db}{dsn});
-      $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
-  }
-  else {
-    $LOG->info('Connecting to CPAN::Testers::Schema');
-    $schema = CPAN::Testers::Schema->connect_from_config;
-  }
 
-  my $rs = $schema->resultset('TestReport');
+  my $storage = $app->storage('metabase_dump');
 
-  $LOG->info('Spawning workers');
-  my $loop = IO::Async::Loop->new;
-  my %worker_ch;
-  my %done_ch;
-  for my $worker_id ( 0..$opt{jobs}-1 ) {
-    my $done_ch = IO::Async::Channel->new;
-    my $worker_ch = IO::Async::Channel->new;
-    my $worker = IO::Async::Routine->new(
-       channels_in  => [ $worker_ch ],
-       channels_out => [ $done_ch ],
-       code => sub {
-         $LOG->debug('Worker loop start', { worker_id => $worker_id });
-         while (my $mb_row = $worker_ch->recv) {
-           $LOG->debug('Worker received', { worker_id => $worker_id, uuid => $mb_row->{guid} });
-           write_report($storage, $rs, $mb_row, %opt );
-           $done_ch->send($worker_id);
-           $LOG->debug('Worker wrote report', { worker_id => $worker_id, uuid => $mb_row->{guid} });
-         }
-	       $LOG->debug('Worker loop end', { worker_id => $worker_id });
-	       return 0;
-       },
-       on_finish => sub {
-	       $LOG->debug('Worker ended', { worker_id => $worker_id });
-       },
-    );
-    $worker_ch{ $worker_id } = $worker_ch;
-    $done_ch{ $worker_id } = $done_ch;
-    $loop->add( $worker );
-  }
+  $LOG->info("Connecting to " . $app->config->{db}{dsn});
+  my $conn = DBIx::Connector->new($app->config->{db}->@{qw( dsn username password args )});
+  $conn->mode('fixup');
+  $conn->disconnect_on_destroy(0);
+  my $pm = Parallel::ForkManager->new($opt{jobs});
+  $pm->set_waitpid_blocking_sleep(0);
 
   # Start crawling through the metabase.metabase table
   $LOG->info('Connecting to Metabase');
-  my $dbi = $schema->storage->dbh;
-  my $sth = $dbi->prepare('SELECT * FROM metabase.metabase WHERE id >= ? LIMIT ' . $opt{page});
-  my $total_processed = 0;
-  my $got_rows = 0;
 
-  $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
-  $sth->execute($start_id);
-  for my $worker_id ( keys %worker_ch ) {
-    my $mb_row = $sth->fetchrow_hashref;
-    last if !$mb_row;
-    $got_rows++;
-    $start_id = $mb_row->{id} + 1;
+  # Dump will dump files to storage with a single page of rows
+  # Then workers can read those files and fix them
+  my ( $min, $max ) = $conn->dbh->selectrow_array( 'SELECT MIN(id), MAX(id) FROM metabase.metabase' );
+  my $index = 1;
+  my $start = $args[0] || ( $min - ( $min % $opt{page} ) );
+  my $end = $start + $opt{page};
+  while ( $start <= $max ) {
+    $pm->wait_for_available_procs();
+    my $filename = "metabase.$start.yaml";
+    $conn->run(sub {
+      $LOG->info( "Executing metabase query", {start => $start, end => $end, index => $index, pid => $$} );
+      my $sth = $_->prepare( "SELECT * FROM metabase.metabase WHERE id >= ? AND id < ?" );
+      $sth->execute( $start, $end );
 
-    # Let a worker signal it is done
-    $done_ch{$worker_id}->configure(on_recv => sub {
-		  my ($ch, $worker_id) = @_;
-	    $LOG->debug( "Manager receive done", { worker_id => $worker_id } );
-	    $total_processed++;
-	    # ... and then add another
-	    my $mb_row = $sth->fetchrow_hashref;
-	    if (!$mb_row && $got_rows >= $opt{page}) {
-	      # We're out of rows on this execution, so let's find the next page
-	      $LOG->info( "Read rows from Metabase", { got_rows => $got_rows, page_size => $opt{page}, next_start_id => $start_id });
-	      return if $total_processed >= $opt{max};
-
-	      $LOG->info('Executing Metabase read', { total_processed => $total_processed, page_size => $opt{page}, start_id => $start_id });
-	      $got_rows = 0;
-	      $sth->execute($start_id);
-	      $mb_row = $sth->fetchrow_hashref;
-	    }
-	    return if !$mb_row;
-	    $got_rows++;
-	    $start_id = $mb_row->{id} + 1;
-	    $LOG->debug( "Manager send", { worker_id => $worker_id } );
-	    $worker_ch{$worker_id}->send($mb_row);
+      $LOG->info( "Fetching rows", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      open my $fh, '>', $filename;
+      while ( my $row = $sth->fetchrow_hashref ) {
+          say { $fh } Dump( $row );
+      }
+      close $fh;
+      $sth->finish;
     });
-    # Add an initial row to each worker
-    $LOG->debug( "Manager send", { worker_id => $worker_id, uuid => $mb_row->{guid} } );
-    $worker_ch{$worker_id}->send($mb_row);
-  }
 
-  $LOG->debug('Starting loop');
-  $loop->run;
-  $LOG->info("Finished converting Metabase");
+    # Handle the actual upload in a child process so we can keep reading from the database.
+    unless ($pm->start) {
+      my $s3 = $storage->driver;
+      $LOG->info( "Compressing", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      system "gzip", $filename;
+      $filename .= '.gz';
+      $LOG->info( "Uploading", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      system "s3cmd", "put", '--access_key', $s3->access_key_id, '--secret_key', $s3->secret_access_key, '--host', $s3->endpoint, '--host-bucket', '%(bucket)s.' . $s3->endpoint, $filename, "s3://" . $s3->bucket;
+      $LOG->info( "Deleting", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      unlink $filename;
+      $LOG->info( "Finishing", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      $pm->finish(0);
+      $LOG->info( "Finished", {start => $start, end => $end, index => $index, pid => $$, filename => $filename} );
+      return 0;
+    }
+
+    $start = $end;
+    $end = $start + $opt{page};
+    $index++;
+  }
+  $LOG->info("Waiting for children to finish");
+  $pm->wait_all_children;
 
   return 0;
 }
 
-sub write_report( $storage, $rs, $mb_row, %opt ) {
-  my $metabase_report = $rs->parse_metabase_report( $mb_row );
-  my $test_report_row = $rs->convert_metabase_report( $metabase_report );
-  $storage->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
-}
+1;

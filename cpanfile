@@ -4,6 +4,7 @@
 requires "AWS::S3" => "1.00";
 requires "CPAN::Testers::Schema" => "0.028";
 requires "DBI" => "0";
+requires "DBIx::Connector" => "0";
 requires "Data::Dumper" => "0";
 requires "Data::GUID" => "0";
 requires "File::Share" => "0";
@@ -17,6 +18,7 @@ requires "Mojolicious::Plugin::OpenAPI::Modern" => "0";
 requires "Mojolicious::Plugin::OpenTelemetry" => "0";
 requires "OpenAPI::Modern" => "0";
 requires "OpenTelemetry::SDK" => "0.027";
+requires "Parallel::ForkManager" => "2.04";
 requires "perl" => "5.040";
 
 on 'test' => sub {
