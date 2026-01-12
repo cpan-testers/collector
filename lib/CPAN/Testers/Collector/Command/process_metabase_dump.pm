@@ -176,7 +176,6 @@ sub run ($self, @args) {
     $loop->run;
     $loop->remove( $timer );
     $timer->stop;
-    undef $future, $timer;
 
     # Let's go to the next file!
     $LOG->info('Deleting file', {i => $iteration, index => $current_index, file => $file});
