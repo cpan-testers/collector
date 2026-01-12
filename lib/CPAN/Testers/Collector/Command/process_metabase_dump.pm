@@ -27,6 +27,7 @@ use JSON::XS qw( decode_json encode_json );
 use Log::Any qw( $LOG );
 use IO::Async::Function;
 use IO::Async::Loop;
+use IO::Async::Timer::Periodic;
 use YAML::XS qw( Load );
 
 # The main loop will fetch from the Metabase dump and hand off processing
@@ -73,34 +74,34 @@ sub run ($self, @args) {
 
   # Prepare the worker process for reformatting and uploading individual files.
   my $proc = IO::Async::Function->new(
-    code => sub( $mb_row ) {
+    code => sub( $count, $mb_row ) {
       # This doesn't actually need to connect to the schema, but
       # there are data migration routines in the TestReport resultset
       # class that we need.
       state $schema;
       if (!$schema) {
         if ( $app->config->{db} ) {
-            $LOG->info("Connecting to " . $app->config->{db}{dsn}, { pid => $$ });
+            $LOG->info("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
             $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
         }
         else {
-          $LOG->info('Connecting to CPAN::Testers::Schema', { pid => $$ });
+          $LOG->info('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
           $schema = CPAN::Testers::Schema->connect_from_config;
         }
       }
       state $rs = $schema->resultset('TestReport');
       state $report_storage = $app->storage;
 
-      $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid} });
+      $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
       local $@;
       eval {
         write_report($report_storage, $rs, $mb_row );
       };
       if (my $e = $@) {
-        $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e });
+        $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e, count => $count, });
         die $e;
       }
-      $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid} });
+      $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
     },
     max_workers => $opt{jobs},
     # Prevent memory leakage by recycling workers
@@ -115,6 +116,7 @@ sub run ($self, @args) {
   # get the next page it should work on.
   my $iteration = 0;
   my $current_index = ($iteration*$shard_total)+$shard_index;
+  my $processed_count = 0;
   while ($current_index < @files) {
     my $file = $files[$current_index];
     $LOG->info('Downloading file from s3', {i => $iteration, index => $current_index, file => $file});
@@ -145,9 +147,10 @@ sub run ($self, @args) {
       # TODO: Find or write an IO::Async::Handle for iterating over single YAML
       # documents?
       if ($line =~ m{^---\s*$} && $yaml_buffer) {
+        $processed_count++;
         my $mb_row = YAML::XS::Load($yaml_buffer);
-        $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid} });
-        push @promises, $proc->call(args => [$mb_row]);
+        $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid}, processed_count => $processed_count });
+        push @promises, $proc->call(args => [$processed_count, $mb_row]);
         $yaml_buffer = '';
       }
 
@@ -159,10 +162,21 @@ sub run ($self, @args) {
     # high water mark on calls to IO::Async::Function is, so I don't want to just
     # toss everything at it and let memory grow unbounded as we queue up jobs.
     # TODO: Ask Leonerd about high water mark for IO::Async::Function?
-    $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file});
+    my $waiting_since = "".gmtime;
+    my $timer = IO::Async::Timer::Periodic->new(
+      interval => 30,
+      first_interval => 0,
+      on_tick => sub {
+        $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since});
+      },
+    );
+    $loop->add($timer);
+    $timer->start;
     my $future = Future->wait_all( @promises )->then(sub { $loop->stop });
     $loop->run;
-    undef $future;
+    $loop->remove( $timer );
+    $timer->stop;
+    undef $future, $timer;
 
     # Let's go to the next file!
     $LOG->info('Deleting file', {i => $iteration, index => $current_index, file => $file});
