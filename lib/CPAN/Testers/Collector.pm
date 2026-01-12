@@ -60,7 +60,9 @@ use Log::Any::Adapter 'Multiplex' =>
   # see the local logs.
   adapters => {
     'OpenTelemetry' => [],
-    'Stderr' => [],
+    'Stderr' => [
+      log_level => $ENV{LOG_LEVEL} || $ENV{MOJO_LOG_LEVEL} || "debug",
+    ],
   };
 use Log::Any qw($LOG);
 use Mojo::File qw( path );
