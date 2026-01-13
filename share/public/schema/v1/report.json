@@ -4,15 +4,15 @@
 
   "description": "CPAN Testers report",
   "type": "object",
-  "required": [ "reporter", "environment", "distribution", "result" ],
+  "required": ["reporter", "environment", "distribution", "result"],
   "properties": {
-    "id":           { "type": "string", "format": "uuid" },
-    "created":      { "type": "string", "format": "date-time" },
-    "reporter":     { "$ref": "#/$defs/reporter" },
-    "environment":  { "$ref": "#/$defs/environment" },
+    "id": { "type": "string", "format": "uuid" },
+    "created": { "type": "string", "format": "date-time" },
+    "reporter": { "$ref": "#/$defs/reporter" },
+    "environment": { "$ref": "#/$defs/environment" },
     "distribution": { "$ref": "#/$defs/distribution" },
-    "result":       { "$ref": "#/$defs/result" },
-    "comments":     {}
+    "result": { "$ref": "#/$defs/result" },
+    "comments": {}
   },
 
   "$defs": {
@@ -38,9 +38,9 @@
           "type": "string",
           "enum": ["Perl", "Raku"]
         },
-        "archname":  { "type": "string" },
-        "build":     { "type": "string" },
-        "version":   { "type": "string" },
+        "archname": { "type": "string" },
+        "build": { "type": "string" },
+        "version": { "type": "string" },
         "variables": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -58,8 +58,8 @@
             "required": ["version"],
             "properties": {
               "version": {
-                  "type": "string",
-                  "pattern": "^\\d+\\.\\d+\\.\\d+"
+                "type": "string",
+                "pattern": "^\\d+\\.\\d+\\.\\d+"
               },
               "commit_id": { "type": "string" }
             }
@@ -78,7 +78,7 @@
               "backend": {
                 "type": "object",
                 "properties": {
-                  "engine":  { "type": "string" },
+                  "engine": { "type": "string" },
                   "version": { "type": "string" }
                 }
               }
@@ -91,7 +91,7 @@
       "type": "object",
       "required": ["email"],
       "properties": {
-        "name":  { "type": "string" },
+        "name": { "type": "string" },
         "email": { "type": "string" }
       }
     },
@@ -99,13 +99,13 @@
       "type": "object",
       "required": ["osname"],
       "properties": {
-        "osname":          { "type": "string" },
-        "osversion":       { "type": "string" },
-        "hostname":        { "type": "string" },
-        "cpu_count":       { "type": "string" },
-        "cpu_type":        { "type": "string" },
+        "osname": { "type": "string" },
+        "osversion": { "type": "string" },
+        "hostname": { "type": "string" },
+        "cpu_count": { "type": "string" },
+        "cpu_type": { "type": "string" },
         "cpu_description": { "type": "string" },
-        "filesystem":      { "type": "string" },
+        "filesystem": { "type": "string" },
         "variables": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -117,10 +117,10 @@
       "required": ["grade", "output"],
       "properties": {
         "grade": { "$ref": "#/$defs/grade" },
-        "tests":    { "type": "integer", "minimum": 0 },
+        "tests": { "type": "integer", "minimum": 0 },
         "failures": { "type": "integer", "minimum": 0 },
-        "skipped":  { "type": "integer", "minimum": 0 },
-        "todo":     {
+        "skipped": { "type": "integer", "minimum": 0 },
+        "todo": {
           "type": "object",
           "required": ["pass", "fail"],
           "properties": {
@@ -137,7 +137,7 @@
       "type": "object",
       "required": ["name", "version"],
       "properties": {
-        "name":    { "type": "string" },
+        "name": { "type": "string" },
         "version": { "type": "string" },
         "path": { "type": "string" },
         "prerequisites": {
@@ -154,10 +154,10 @@
       "description": "At least one of the properties must be set",
       "properties": {
         "uncategorized": { "type": "string" },
-        "configure":     { "type": "string" },
-        "build":         { "type": "string" },
-        "test":          { "type": "string" },
-        "install":       { "type": "string" }
+        "configure": { "type": "string" },
+        "build": { "type": "string" },
+        "test": { "type": "string" },
+        "install": { "type": "string" }
       }
     },
     "prerequisite": {
@@ -165,9 +165,9 @@
       "required": ["phase", "name", "need"],
       "properties": {
         "phase": { "type": "string" },
-        "name":  { "type": "string" },
-        "need":  { "type": "string" },
-        "have":  { "type": "string" }
+        "name": { "type": "string" },
+        "need": { "type": "string" },
+        "have": { "type": "string" }
       }
     },
     "grade": {
