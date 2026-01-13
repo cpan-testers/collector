@@ -80,12 +80,13 @@ sub run ($self, @args) {
       # class that we need.
       state $schema;
       if (!$schema) {
+        $LOG->info('Worker starting', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
         if ( $app->config->{db} ) {
-            $LOG->info("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
+            $LOG->debug("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
             $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
         }
         else {
-          $LOG->info('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
+          $LOG->debug('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
           $schema = CPAN::Testers::Schema->connect_from_config;
         }
       }
@@ -93,7 +94,16 @@ sub run ($self, @args) {
       state $report_storage = $app->storage;
 
       $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
+      # See if we need to actually process this file
       local $@;
+      eval {
+        $app->storage->driver->_bucket->file($mb_row->{guid});
+      };
+      if (!$@) {
+        $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count });
+        return;
+      }
+      # File must not exist, so let's go!
       eval {
         write_report($report_storage, $rs, $mb_row );
       };
@@ -185,7 +195,7 @@ sub run ($self, @args) {
     $current_index = ($iteration*$shard_total)+$shard_index;
   }
 
-  $LOG->info("Finished converting Metabase");
+  $LOG->info("Finished converting Metabase",{ last_index => $current_index, count => scalar @files });
   return 0;
 }
 
