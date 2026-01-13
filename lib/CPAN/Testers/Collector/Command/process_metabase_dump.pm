@@ -159,6 +159,7 @@ sub run ($self, @args) {
       if ($line =~ m{^---\s*$} && $yaml_buffer) {
         $processed_count++;
         my $mb_row = YAML::XS::Load($yaml_buffer);
+        $mb_row->{guid} = lc $mb_row->{guid};
         $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid}, processed_count => $processed_count });
         push @promises, $proc->call(args => [$processed_count, $mb_row]);
         $yaml_buffer = '';
