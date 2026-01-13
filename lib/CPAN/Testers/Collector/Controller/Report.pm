@@ -31,6 +31,14 @@ Submit a new CPAN Testers report.
 sub report_post( $c ) {
   return if !$c->_validate;
   my $uuid = $c->param('uuid') || Data::GUID->new->as_string;
+  my $body = $c->req->body;
+  if (length $body <= 0) {
+    $c->log->error(sprintf 'Report %s has no content', $c->param('uuid') // 'submitted');
+    return $c->render(
+      status => 400,
+      json => { error => 'No content' },
+    );
+  }
   $c->storage->write( $uuid, $c->req->body );
   return $c->render(
     status => 201,

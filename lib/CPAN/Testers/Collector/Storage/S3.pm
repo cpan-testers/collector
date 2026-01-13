@@ -96,7 +96,7 @@ used as the path to write to. C<$content> is a string of content.
 
 sub write( $self, $uuid, $content ) {
   $uuid = lc $uuid;
-  $LOG->info('Writing to storage', {uuid => $uuid, endpoint => $self->endpoint, bucket => $self->bucket });
+  $LOG->info('Writing to storage', {uuid => $uuid, endpoint => $self->endpoint, bucket => $self->bucket, size => length $content });
   $self->_bucket->add_file(
     key => $uuid,
     contents => \$content,
