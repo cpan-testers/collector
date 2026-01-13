@@ -202,7 +202,7 @@ sub run ($self, @args) {
 sub write_report( $storage, $rs, $mb_row ) {
   my $metabase_report = $rs->parse_metabase_report( $mb_row );
   my $test_report_row = $rs->convert_metabase_report( $metabase_report );
-  $storage->write( $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
+  $storage->write( lc $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
 }
 
 1;
