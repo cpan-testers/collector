@@ -14,7 +14,7 @@ my $minimum_report = {
   },
   environment => {
     language => {
-      name => 'Perl',
+      name => 'perl',
       version => '5.40.0',
       archname => 'x86_64-linux',
     },
