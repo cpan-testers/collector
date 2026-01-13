@@ -36,7 +36,7 @@
       "properties": {
         "name": {
           "type": "string",
-          "enum": ["Perl", "Raku"]
+          "enum": ["perl", "raku"]
         },
         "archname": { "type": "string" },
         "build": { "type": "string" },
