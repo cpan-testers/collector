@@ -96,12 +96,16 @@ sub run ($self, @args) {
       $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
       # See if we need to actually process this file
       local $@;
+      my $file;
       eval {
-        $app->storage->driver->_bucket->file($mb_row->{guid});
+        $file = $app->storage->driver->_bucket->file($mb_row->{guid});
       };
-      if (!$@) {
-        $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count });
-        return;
+      if (my $e = $@) {
+        $LOG->debug('Error checking file existence', { uuid => $mb_row->{guid}, count => $count, error => $e });
+      }
+      elsif ($file and $file->size > 0) {
+        $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count, file => { size => $file->size, etag => $file->etag } });
+        return 0;
       }
       # File must not exist, so let's go!
       eval {
@@ -112,6 +116,7 @@ sub run ($self, @args) {
         die $e;
       }
       $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
+      return 1;
     },
     max_workers => $opt{jobs},
     # Prevent memory leakage by recycling workers
@@ -126,7 +131,8 @@ sub run ($self, @args) {
   # get the next page it should work on.
   my $iteration = 0;
   my $current_index = ($iteration*$shard_total)+$shard_index;
-  my $processed_count = 0;
+  my $seen = 0;
+  my $written = 0;
   while ($current_index < @files) {
     my $file = $files[$current_index];
     $LOG->info('Downloading file from s3', {i => $iteration, index => $current_index, file => $file});
@@ -157,11 +163,11 @@ sub run ($self, @args) {
       # TODO: Find or write an IO::Async::Handle for iterating over single YAML
       # documents?
       if ($line =~ m{^---\s*$} && $yaml_buffer) {
-        $processed_count++;
+        $seen++;
         my $mb_row = YAML::XS::Load($yaml_buffer);
         $mb_row->{guid} = lc $mb_row->{guid};
-        $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid}, processed_count => $processed_count });
-        push @promises, $proc->call(args => [$processed_count, $mb_row]);
+        $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid}, seen => $seen, written => $written });
+        push @promises, $proc->call(args => [$seen, $mb_row])->then(sub { $written += shift // 0 });
         $yaml_buffer = '';
       }
 
@@ -178,7 +184,7 @@ sub run ($self, @args) {
       interval => 30,
       first_interval => 0,
       on_tick => sub {
-        $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since});
+        $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since, seen => $seen, written => $written});
       },
     );
     $loop->add($timer);
@@ -189,8 +195,10 @@ sub run ($self, @args) {
     $timer->stop;
 
     # Let's go to the next file!
-    $LOG->info('Deleting file', {i => $iteration, index => $current_index, file => $file});
+    $LOG->info('Finished with file', {i => $iteration, index => $current_index, file => $file, seen => $seen, written => $written});
     unlink $file;
+    $seen = 0;
+    $written = 0;
 
     $iteration++;
     $current_index = ($iteration*$shard_total)+$shard_index;
