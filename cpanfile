@@ -13,6 +13,7 @@ requires "IO::Async::Loop::Mojo" => "0";
 requires "JSON::XS" => "0";
 requires "Log::Any" => "1.718";
 requires "Log::Any::Adapter::OpenTelemetry" => "0";
+requires "Memory::Usage" => "0";
 requires "Mojolicious" => "9";
 requires "Mojolicious::Plugin::Moai" => "0";
 requires "Mojolicious::Plugin::OpenAPI::Modern" => "0";

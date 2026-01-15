@@ -29,10 +29,14 @@ use IO::Async::Function;
 use IO::Async::Loop;
 use IO::Async::Timer::Periodic;
 use YAML::XS qw( Load );
+use Memory::Usage;
 
 # The main loop will fetch from the Metabase dump and hand off processing
 # each report to an async worker.
 sub run ($self, @args) {
+  state $mu = Memory::Usage->new;
+  $mu->record('init');
+
   my %opt = (
     jobs => 10,
     shard => '0/1',
@@ -54,6 +58,8 @@ sub run ($self, @args) {
   my $loop = IO::Async::Loop->new;
 
   # List the files from the S3 storage.
+  $mu->record('before_list');
+  _report_memory($mu);
   my $s3 = $metabase_dump_storage->driver;
   my $cmd = join " ", "s3cmd", "ls", '--access_key', $s3->access_key_id, '--secret_key', $s3->secret_access_key, '--host', $s3->endpoint, '--host-bucket', q{'%(bucket)s.} . $s3->endpoint . q{'}, "s3://" . $s3->bucket;
   my @lines = qx{$cmd};
@@ -71,10 +77,19 @@ sub run ($self, @args) {
     # Get the numeric ID from the filename
     map { [ $_, m{(\d+)} ] } @files;
   $LOG->debug('Got file list', { count => scalar @files });
+  $mu->record('after_list');
+  _report_memory($mu);
 
   # Prepare the worker process for reformatting and uploading individual files.
   my $proc = IO::Async::Function->new(
-    code => sub( $count, $mb_row ) {
+    code => sub( $count, $yaml_buffer ) {
+      state $mu = Memory::Usage->new;
+      $mu->record($count);
+
+      # Parse the YAML in the child process, to recover memory when child process ends
+      my $mb_row = YAML::XS::Load($yaml_buffer);
+      $mb_row->{guid} = lc $mb_row->{guid};
+
       # This doesn't actually need to connect to the schema, but
       # there are data migration routines in the TestReport resultset
       # class that we need.
@@ -94,6 +109,8 @@ sub run ($self, @args) {
       }
       elsif ($file and $file->size > 0) {
         $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count, file => { size => $file->size, etag => $file->etag } });
+        $mu->record('after_check');
+        _report_memory($mu);
         return 0;
       }
 
@@ -112,11 +129,14 @@ sub run ($self, @args) {
       eval {
         write_report($report_storage, $rs, $mb_row );
       };
+      $mu->record('after_write');
       if (my $e = $@) {
         $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e, count => $count, });
+        _report_memory($mu);
         die $e;
       }
       $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
+      _report_memory($mu);
       return 1;
     },
     max_workers => $opt{jobs},
@@ -134,6 +154,8 @@ sub run ($self, @args) {
   my $current_index = ($iteration*$shard_total)+$shard_index;
   my $seen = 0;
   my $written = 0;
+  $mu->record('before_queue');
+  _report_memory($mu);
   while ($current_index < @files) {
     my $file = $files[$current_index];
     $LOG->info('Downloading file from s3', {i => $iteration, index => $current_index, file => $file});
@@ -165,16 +187,18 @@ sub run ($self, @args) {
       # documents?
       if ($line =~ m{^---\s*$} && $yaml_buffer) {
         $seen++;
-        my $mb_row = YAML::XS::Load($yaml_buffer);
-        $mb_row->{guid} = lc $mb_row->{guid};
-        $LOG->debug('Sending job to worker', { uuid => $mb_row->{guid}, seen => $seen, written => $written });
-        push @promises, $proc->call(args => [$seen, $mb_row])->then(sub { $written += shift // 0 });
+        $LOG->debug('Sending job to worker', { seen => $seen, written => $written });
+        push @promises, $proc->call(args => [$seen, $yaml_buffer])->then(sub { $written += shift // 0 });
+        undef $yaml_buffer;
         $yaml_buffer = '';
       }
 
       $yaml_buffer .= $line;
     }
     close $fh;
+    undef $yaml_buffer;
+    $mu->record('after_queue');
+    _report_memory($mu);
 
     # After we're done with a single file, wait for a sync check. I'm not sure what the
     # high water mark on calls to IO::Async::Function is, so I don't want to just
@@ -186,6 +210,8 @@ sub run ($self, @args) {
       first_interval => 0,
       on_tick => sub {
         $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since, seen => $seen, written => $written});
+        $mu->record('waiting');
+        _report_memory($mu);
       },
     );
     $loop->add($timer);
@@ -206,6 +232,8 @@ sub run ($self, @args) {
   }
 
   $LOG->info("Finished converting Metabase",{ last_index => $current_index, count => scalar @files });
+  $mu->record('finished');
+  _report_memory($mu);
   return 0;
 }
 
@@ -213,6 +241,23 @@ sub write_report( $storage, $rs, $mb_row ) {
   my $metabase_report = $rs->parse_metabase_report( $mb_row );
   my $test_report_row = $rs->convert_metabase_report( $metabase_report );
   $storage->write( lc $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
+}
+
+sub _report_memory( $mu ) {
+  my $state = $mu->state;
+  my $record_count = @$state;
+  my ($from, $to) = @{$state}[-2,-1];
+  my ($label, $to_vms, $to_rss) = @{$to}[1..3];
+  my ($from_vms, $from_rss) = @{$from}[2..3];
+  my $diff_vms = $to_vms - $from_vms;
+  my $diff_rss = $to_rss - $from_rss;
+  if ($diff_vms || $diff_rss) {
+    printf STDERR "MEM(kb) (%5d,%5d:%12s): VMS %9d (%s%6d); RSS %9d (%s%6d)\n",
+      $$, $record_count, $label,
+      $to_vms, ($diff_vms > 0 ? '+' : $diff_vms < 0 ? '-' : '='), $diff_vms,
+      $to_rss, ($diff_rss > 0 ? '+' : $diff_rss < 0 ? '-' : '='), $diff_rss,
+      ;
+  }
 }
 
 1;
