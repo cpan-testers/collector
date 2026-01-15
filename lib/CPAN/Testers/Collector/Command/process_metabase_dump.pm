@@ -79,18 +79,7 @@ sub run ($self, @args) {
       # there are data migration routines in the TestReport resultset
       # class that we need.
       state $schema;
-      if (!$schema) {
-        $LOG->info('Worker starting', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
-        if ( $app->config->{db} ) {
-            $LOG->debug("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
-            $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
-        }
-        else {
-          $LOG->debug('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
-          $schema = CPAN::Testers::Schema->connect_from_config;
-        }
-      }
-      state $rs = $schema->resultset('TestReport');
+      state $rs;
       state $report_storage = $app->storage;
 
       $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
@@ -107,7 +96,19 @@ sub run ($self, @args) {
         $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count, file => { size => $file->size, etag => $file->etag } });
         return 0;
       }
+
       # File must not exist, so let's go!
+      if (!$schema) {
+        if ( $app->config->{db} ) {
+          $LOG->debug("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
+          $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
+        }
+        else {
+          $LOG->debug('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
+          $schema = CPAN::Testers::Schema->connect_from_config;
+        }
+        $rs = $schema->resultset('TestReport');
+      }
       eval {
         write_report($report_storage, $rs, $mb_row );
       };
@@ -119,8 +120,8 @@ sub run ($self, @args) {
       return 1;
     },
     max_workers => $opt{jobs},
-    # Prevent memory leakage by recycling workers
-    max_worker_calls => 100,
+    # Prevent memory leakage by recycling workers quickly
+    max_worker_calls => $ENV{WORKER_REQUEST_LIMIT} // 100,
   );
   $loop->add($proc);
   $proc->start;
