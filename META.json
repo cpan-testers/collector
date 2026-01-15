@@ -44,6 +44,7 @@
             "JSON::XS" : "0",
             "Log::Any" : "1.718",
             "Log::Any::Adapter::OpenTelemetry" : "0",
+            "Memory::Usage" : "0",
             "Mojolicious" : "9",
             "Mojolicious::Plugin::Moai" : "0",
             "Mojolicious::Plugin::OpenAPI::Modern" : "0",
@@ -83,6 +84,10 @@
       },
       "CPAN::Testers::Collector::Command::dump_test_reports" : {
          "file" : "lib/CPAN/Testers/Collector/Command/dump_test_reports.pm",
+         "version" : "0.001"
+      },
+      "CPAN::Testers::Collector::Command::process_metabase_dump" : {
+         "file" : "lib/CPAN/Testers/Collector/Command/process_metabase_dump.pm",
          "version" : "0.001"
       },
       "CPAN::Testers::Collector::Controller::Report" : {
