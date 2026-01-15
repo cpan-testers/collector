@@ -19,6 +19,7 @@ C<--jobs> is the number of parallel processing/uploading workers to run.
 
 =cut
 
+use constant REPORT_MEMORY => $ENV{REPORT_MEMORY} // 1;
 use Mojo::Base 'Mojolicious::Command', -signatures, -async_await;
 use Getopt::Long qw( GetOptionsFromArray :config pass_through );
 use CPAN::Testers::Collector::Storage;
@@ -34,8 +35,7 @@ use Memory::Usage;
 # The main loop will fetch from the Metabase dump and hand off processing
 # each report to an async worker.
 sub run ($self, @args) {
-  state $mu = Memory::Usage->new;
-  $mu->record('init');
+  _report_memory('init');
 
   my %opt = (
     jobs => 10,
@@ -58,8 +58,7 @@ sub run ($self, @args) {
   my $loop = IO::Async::Loop->new;
 
   # List the files from the S3 storage.
-  $mu->record('before_list');
-  _report_memory($mu);
+  _report_memory('before_list');
   my $s3 = $metabase_dump_storage->driver;
   my $cmd = join " ", "s3cmd", "ls", '--access_key', $s3->access_key_id, '--secret_key', $s3->secret_access_key, '--host', $s3->endpoint, '--host-bucket', q{'%(bucket)s.} . $s3->endpoint . q{'}, "s3://" . $s3->bucket;
   my @lines = qx{$cmd};
@@ -77,71 +76,17 @@ sub run ($self, @args) {
     # Get the numeric ID from the filename
     map { [ $_, m{(\d+)} ] } @files;
   $LOG->debug('Got file list', { count => scalar @files });
-  $mu->record('after_list');
-  _report_memory($mu);
+  _report_memory('after_list');
 
   # Prepare the worker process for reformatting and uploading individual files.
   my $proc = IO::Async::Function->new(
-    code => sub( $count, $yaml_buffer ) {
-      state $mu = Memory::Usage->new;
-      $mu->record($count);
-
-      # Parse the YAML in the child process, to recover memory when child process ends
-      my $mb_row = YAML::XS::Load($yaml_buffer);
-      $mb_row->{guid} = lc $mb_row->{guid};
-
-      # This doesn't actually need to connect to the schema, but
-      # there are data migration routines in the TestReport resultset
-      # class that we need.
-      state $schema;
-      state $rs;
-      state $report_storage = $app->storage;
-
-      $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
-      # See if we need to actually process this file
-      local $@;
-      my $file;
-      eval {
-        $file = $app->storage->driver->_bucket->file($mb_row->{guid});
-      };
-      if (my $e = $@) {
-        $LOG->debug('Error checking file existence', { uuid => $mb_row->{guid}, count => $count, error => $e });
-      }
-      elsif ($file and $file->size > 0) {
-        $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count, file => { size => $file->size, etag => $file->etag } });
-        $mu->record('after_check');
-        _report_memory($mu);
-        return 0;
-      }
-
-      # File must not exist, so let's go!
-      if (!$schema) {
-        if ( $app->config->{db} ) {
-          $LOG->debug("Connecting to " . $app->config->{db}{dsn}, { pid => $$, count => $count, });
-          $schema = CPAN::Testers::Schema->connect( $app->config->{db}->@{qw( dsn username password args )} );
-        }
-        else {
-          $LOG->debug('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
-          $schema = CPAN::Testers::Schema->connect_from_config;
-        }
-        $rs = $schema->resultset('TestReport');
-      }
-      eval {
-        write_report($report_storage, $rs, $mb_row );
-      };
-      $mu->record('after_write');
-      if (my $e = $@) {
-        $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e, count => $count, });
-        _report_memory($mu);
-        die $e;
-      }
-      $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
-      _report_memory($mu);
-      return 1;
-    },
+    module => __PACKAGE__,
+    func => '_process_yaml_buffer',
+    # Using 'spawn' to prevent the parent process's memory use from affecting child processes
+    model => 'spawn',
     max_workers => $opt{jobs},
     # Prevent memory leakage by recycling workers quickly
-    max_worker_calls => $ENV{WORKER_REQUEST_LIMIT} // 100,
+    #max_worker_calls => 1000,
   );
   $loop->add($proc);
   $proc->start;
@@ -154,8 +99,7 @@ sub run ($self, @args) {
   my $current_index = ($iteration*$shard_total)+$shard_index;
   my $seen = 0;
   my $written = 0;
-  $mu->record('before_queue');
-  _report_memory($mu);
+  _report_memory('before_queue');
   while ($current_index < @files) {
     my $file = $files[$current_index];
     $LOG->info('Downloading file from s3', {i => $iteration, index => $current_index, file => $file});
@@ -175,30 +119,31 @@ sub run ($self, @args) {
     # Stream the decompression of the file to reduce memory usage. As we get single YAML
     # documents, pass them off to workers to process.
     $LOG->info('Reading file', {i => $iteration, index => $current_index, file => $file});
-    my $yaml_buffer = '';
     my @promises;
-    open my $fh, '-|', "gunzip -c $file" or die "Could not open pipe to gunzip: $!";
-    while (my $line = <$fh>) {
-      #$LOG->debug('Got line', { line => $line });
-      # Look for document markers. We're ignoring any document tags because
-      # I didn't add them in the dump_metabase command, and I don't feel like
-      # dealing with it.
-      # TODO: Find or write an IO::Async::Handle for iterating over single YAML
-      # documents?
-      if ($line =~ m{^---\s*$} && $yaml_buffer) {
-        $seen++;
-        $LOG->debug('Sending job to worker', { seen => $seen, written => $written });
-        push @promises, $proc->call(args => [$seen, $yaml_buffer])->then(sub { $written += shift // 0 });
-        undef $yaml_buffer;
-        $yaml_buffer = '';
-      }
+    {
+      my $yaml_buffer = '';
+      open my $fh, '-|', "gunzip -c $file" or die "Could not open pipe to gunzip: $!";
+      while (my $line = <$fh>) {
+        #$LOG->debug('Got line', { line => $line });
+        # Look for document markers. We're ignoring any document tags because
+        # I didn't add them in the dump_metabase command, and I don't feel like
+        # dealing with it.
+        # TODO: Find or write an IO::Async::Handle for iterating over single YAML
+        # documents?
+        if ($line =~ m{^---\s*$} && $yaml_buffer) {
+          $seen++;
+          $LOG->debug('Sending job to worker', { seen => $seen, written => $written });
+          push @promises, $proc->call(args => [$app->config, $seen, $yaml_buffer])->then(sub { $written += shift // 0 });
+          undef $yaml_buffer;
+          $yaml_buffer = '';
+        }
 
-      $yaml_buffer .= $line;
-    }
-    close $fh;
-    undef $yaml_buffer;
-    $mu->record('after_queue');
-    _report_memory($mu);
+        $yaml_buffer .= $line;
+      }
+      close $fh;
+      undef $yaml_buffer;
+    };
+    _report_memory('after_queue');
 
     # After we're done with a single file, wait for a sync check. I'm not sure what the
     # high water mark on calls to IO::Async::Function is, so I don't want to just
@@ -210,8 +155,7 @@ sub run ($self, @args) {
       first_interval => 0,
       on_tick => sub {
         $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since, seen => $seen, written => $written});
-        $mu->record('waiting');
-        _report_memory($mu);
+        _report_memory('waiting');
       },
     );
     $loop->add($timer);
@@ -232,8 +176,7 @@ sub run ($self, @args) {
   }
 
   $LOG->info("Finished converting Metabase",{ last_index => $current_index, count => scalar @files });
-  $mu->record('finished');
-  _report_memory($mu);
+  _report_memory('finished');
   return 0;
 }
 
@@ -243,21 +186,81 @@ sub write_report( $storage, $rs, $mb_row ) {
   $storage->write( lc $test_report_row->{id}, encode_json( $test_report_row->{report} ) );
 }
 
-sub _report_memory( $mu ) {
+sub _report_memory( $label ) {
+  state $mu = Memory::Usage->new;
+  $mu->record($label);
   my $state = $mu->state;
   my $record_count = @$state;
+  return if $record_count < 2;
   my ($from, $to) = @{$state}[-2,-1];
-  my ($label, $to_vms, $to_rss) = @{$to}[1..3];
+  my ($to_vms, $to_rss) = @{$to}[2..3];
   my ($from_vms, $from_rss) = @{$from}[2..3];
   my $diff_vms = $to_vms - $from_vms;
   my $diff_rss = $to_rss - $from_rss;
+  # Only report jumps above 1 megabyte
+  return unless $diff_vms > 1024 || $diff_rss > 1024;
   if ($diff_vms || $diff_rss) {
     printf STDERR "MEM(kb) (%5d,%5d:%12s): VMS %9d (%s%6d); RSS %9d (%s%6d)\n",
       $$, $record_count, $label,
-      $to_vms, ($diff_vms > 0 ? '+' : $diff_vms < 0 ? '-' : '='), $diff_vms,
-      $to_rss, ($diff_rss > 0 ? '+' : $diff_rss < 0 ? '-' : '='), $diff_rss,
+      $to_vms, ($diff_vms > 0 ? '+' : $diff_vms < 0 ? '-' : '='), abs $diff_vms,
+      $to_rss, ($diff_rss > 0 ? '+' : $diff_rss < 0 ? '-' : '='), abs $diff_rss,
       ;
   }
+}
+
+sub _process_yaml_buffer( $config, $count, $yaml_buffer ) {
+  _report_memory('worker_init');
+
+  # Parse the YAML in the child process, to recover memory when child process ends
+  my $mb_row = YAML::XS::Load($yaml_buffer);
+  undef $yaml_buffer;
+  $mb_row->{guid} = lc $mb_row->{guid};
+
+  # This doesn't actually need to connect to the schema, but
+  # there are data migration routines in the TestReport resultset
+  # class that we need.
+  state $schema;
+  state $rs;
+  state $report_storage = CPAN::Testers::Collector::Storage->new(%{$config->{storage}});
+
+  $LOG->debug('Worker received', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
+  # See if we need to actually process this file
+  local $@;
+  my $file;
+  eval {
+    $file = $report_storage->driver->_bucket->file($mb_row->{guid});
+  };
+  if (my $e = $@) {
+    $LOG->debug('Error checking file existence', { uuid => $mb_row->{guid}, count => $count, error => $e });
+  }
+  elsif ($file and $file->size > 0) {
+    $LOG->debug('File exists, skipping', { uuid => $mb_row->{guid}, count => $count, file => { size => $file->size, etag => $file->etag } });
+    _report_memory('after_check');
+    return 0;
+  }
+
+  # File must not exist, so let's go!
+  if (!$schema) {
+    if ( $config->{db} ) {
+      $LOG->debug("Connecting to " . $config->{db}{dsn}, { pid => $$, count => $count, });
+      $schema = CPAN::Testers::Schema->connect( $config->{db}->@{qw( dsn username password args )} );
+    }
+    else {
+      $LOG->debug('Connecting to CPAN::Testers::Schema', { pid => $$, count => $count, });
+      $schema = CPAN::Testers::Schema->connect_from_config;
+    }
+    $rs = $schema->resultset('TestReport');
+  }
+  eval {
+    write_report($report_storage, $rs, $mb_row );
+  };
+  _report_memory('after_write');
+  if (my $e = $@) {
+    $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e, count => $count, });
+    die $e;
+  }
+  $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
+  return 1;
 }
 
 1;
