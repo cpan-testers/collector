@@ -19,7 +19,7 @@ C<--jobs> is the number of parallel processing/uploading workers to run.
 
 =cut
 
-use constant REPORT_MEMORY => $ENV{REPORT_MEMORY} // 1;
+use constant REPORT_MEMORY => 0;
 use Mojo::Base 'Mojolicious::Command', -signatures, -async_await;
 use Getopt::Long qw( GetOptionsFromArray :config pass_through );
 use CPAN::Testers::Collector::Storage;
@@ -85,8 +85,6 @@ sub run ($self, @args) {
     # Using 'spawn' to prevent the parent process's memory use from affecting child processes
     model => 'spawn',
     max_workers => $opt{jobs},
-    # Prevent memory leakage by recycling workers quickly
-    #max_worker_calls => 1000,
   );
   $loop->add($proc);
   $proc->start;
@@ -177,6 +175,8 @@ sub run ($self, @args) {
 
   $LOG->info("Finished converting Metabase",{ last_index => $current_index, count => scalar @files });
   _report_memory('finished');
+  $proc->stop;
+  $loop->remove($proc);
   return 0;
 }
 
