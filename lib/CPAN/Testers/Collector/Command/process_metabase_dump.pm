@@ -82,6 +82,7 @@ sub run ($self, @args) {
   my $proc = IO::Async::Function->new(
     module => __PACKAGE__,
     func => '_process_yaml_buffer',
+    init_func => '_init_child_logger',
     # Using 'spawn' to prevent the parent process's memory use from affecting child processes
     model => 'spawn',
     max_workers => $opt{jobs},
@@ -149,7 +150,7 @@ sub run ($self, @args) {
     # TODO: Ask Leonerd about high water mark for IO::Async::Function?
     my $waiting_since = "".gmtime;
     my $timer = IO::Async::Timer::Periodic->new(
-      interval => 30,
+      interval => 5,
       first_interval => 0,
       on_tick => sub {
         $LOG->info('Waiting for workers', {i => $iteration, index => $current_index, file => $file, since => $waiting_since, seen => $seen, written => $written});
@@ -208,6 +209,21 @@ sub _report_memory( $label ) {
   }
 }
 
+sub _init_child_logger() {
+  require Log::Any::Adapter;
+  Log::Any::Adapter->import(
+    'Multiplex' =>
+    # Set up Log::Any to log to OpenTelemetry and Stderr so we can still
+    # see the local logs.
+    adapters => {
+      'OpenTelemetry' => [],
+      'Stderr' => [
+        log_level => $ENV{LOG_LEVEL} || $ENV{MOJO_LOG_LEVEL} || "debug",
+      ],
+    },
+  );
+}
+
 sub _process_yaml_buffer( $config, $count, $yaml_buffer ) {
   _report_memory('worker_init');
 
@@ -257,7 +273,7 @@ sub _process_yaml_buffer( $config, $count, $yaml_buffer ) {
   _report_memory('after_write');
   if (my $e = $@) {
     $LOG->error('Worker error', { pid => $$, uuid => $mb_row->{guid}, error => $e, count => $count, });
-    die $e;
+    die [ $e ];
   }
   $LOG->debug('Worker wrote report', { pid => $$, uuid => $mb_row->{guid}, count => $count, });
   return 1;
