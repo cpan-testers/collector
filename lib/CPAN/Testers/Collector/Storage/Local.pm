@@ -63,7 +63,11 @@ Read a report by UUID. Returns the string content of the report.
 =cut
 
 sub read( $self, $uuid ) {
-    return $self->_uuid_path($uuid)->slurp;
+    my $file = $self->_uuid_path($uuid);
+    if (-e $file) {
+      return $file->slurp;
+    }
+    return undef;
 }
 
 #=method _uuid_path

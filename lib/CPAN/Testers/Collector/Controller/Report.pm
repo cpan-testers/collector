@@ -54,8 +54,11 @@ Get an existing CPAN Testers report.
 
 sub report_get( $c ) {
   return if !$c->_validate;
-  my $report = $c->storage->read( $c->stash('uuid') );
   $c->res->headers->content_type('application/json');
+  my $report = $c->storage->read( $c->stash('uuid') );
+  if (!$report) {
+    return $c->reply->json_not_found;
+  }
   $c->render( data => $report );
 }
 

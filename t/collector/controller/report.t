@@ -64,8 +64,12 @@ subtest 'report_get' => sub {
   $t->app->storage->write( $uuid => encode_json( $minimum_report ) );
   $t->get_ok('/v1/report/' . $uuid)->status_is(200)->json_is($minimum_report);
 
+  subtest '404' => sub {
+    my $uuid = Data::GUID->new;
+    $t->get_ok('/v1/report/' . $uuid)->status_is(404)->json_is({error => 'Not Found'})->or(sub { diag $t->tx->res->body });
+  };
+
   # XXX: should work for both lc $uuid and uc $uuid
-  # XXX: should handle 404s
 };
 
 subtest 'report_list' => sub {
