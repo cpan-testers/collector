@@ -110,7 +110,9 @@ Read a report by UUID. Returns the string content of the report.
 =cut
 
 sub read( $self, $uuid ) {
-  $self->_bucket->file( $uuid )->contents->$*;
+  if (my $file = $self->_bucket->file( $uuid )) {
+    return $file->contents->$*;
+  }
 }
 
 1;

@@ -64,11 +64,14 @@ subtest 'read report' => sub {
           return mock { name => $name } => add => [
             file => sub ($bucket, $key) {
               $got_key = $key;
-              return mock { bucket => $bucket, key => $key }, add => [
-                contents => sub ($self) {
-                  return \$content;
-                }
-              ];
+              if ($key eq $uuid) {
+                return mock { bucket => $bucket, key => $key }, add => [
+                  contents => sub ($self) {
+                    return \$content;
+                  }
+                ];
+              }
+              return undef;
             }
           ];
         },
@@ -82,6 +85,12 @@ subtest 'read report' => sub {
   is $got_bucket, $create_args{bucket};
   is $got_key, $uuid;
   is $got_content, $content;
+
+  subtest '404 not found' => sub {
+    my $wrong_uuid = lc guid_string();
+    my $got = $rd->read( $wrong_uuid );
+    is $got, undef, 'returns undef on missing reports';
+  };
 };
 
 done_testing;
