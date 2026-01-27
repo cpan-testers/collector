@@ -73,6 +73,8 @@ subtest 'report_get' => sub {
 };
 
 subtest 'report_list' => sub {
+  # TODO: This should be removed: Users can use the API to get lists and slices of reports. The Collector
+  # should only deal with raw reports and UUIDs.
   my $uuid = Data::GUID->new;
   my $dt = Time::Piece->new;
   $t->app->index->insert( $uuid => $dt->datetime );
