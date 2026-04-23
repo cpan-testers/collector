@@ -43,7 +43,7 @@ subtest 'write report' => sub {
   my $uuid = lc guid_string();
   my $content = 'report';
 
-  my $rd = CPAN::Testers::Collector::Storage->new( S3 => %create_args );
+  my $rd = CPAN::Testers::Collector::Storage->new( S3 => \%create_args );
   $rd->write( $uuid, $content );
 
   is $got_bucket, $create_args{bucket};
@@ -79,7 +79,7 @@ subtest 'read report' => sub {
     },
   ];
 
-  my $rd = CPAN::Testers::Collector::Storage->new( S3 => %create_args );
+  my $rd = CPAN::Testers::Collector::Storage->new( S3 => \%create_args );
   my $got_content = $rd->read( $uuid );
 
   is $got_bucket, $create_args{bucket};

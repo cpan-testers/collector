@@ -20,25 +20,28 @@ use Log::Any qw( $LOG );
 
 =attr driver
 
-The driver for the actual report storage. Should be one of L<CPAN::Testers::Collector::Storage::Local>
-or L<CPAN::Testers::Collector::Storage::S3>.
+The drivers for the actual report storage. Each driver should be one of L<CPAN::Testers::Collector::Storage::Local>
+or L<CPAN::Testers::Collector::Storage::S3>. Drivers are read from in order, and written to collectively.
 
 =cut
 
-has driver => sub { die "Storage driver is required" };
+has drivers => sub { [] };
 
 =method new
 
 =cut
 
-sub new( $class, $driver_type, @args ) {
-  my $driver_class = "CPAN::Testers::Collector::Storage::${driver_type}";
-  if (my $e = load_class $driver_class) {
-    die ref $e ? "Exception: $e" : 'Not found!';
+sub new( $class, @args ) {
+  my $self = $class->SUPER::new;
+  while (@args) {
+    my ($driver_type, $driver_arg) = (shift @args, shift @args);
+    my $driver_class = "CPAN::Testers::Collector::Storage::${driver_type}";
+    if (my $e = load_class $driver_class) {
+      die ref $e ? "Exception: $e" : 'Not found!';
+    }
+    push $self->drivers->@*, $driver_class->new($driver_arg)
   }
-  return $class->SUPER::new(
-    driver => $driver_class->new(@args),
-  );
+  return $self;
 }
 
 =method write
@@ -49,7 +52,10 @@ used as the path to write to. C<$content> is a string of content.
 =cut
 
 sub write( $self, $uuid, $content ) {
-  return $self->driver->write( $uuid, $content );
+  for my $d ( $self->drivers->@* ) {
+    $d->write( $uuid, $content );
+  }
+  return;
 }
 
 =method read
@@ -59,7 +65,12 @@ Read a report by UUID. Returns the string content of the report.
 =cut
 
 sub read( $self, $uuid ) {
-  return $self->driver->read( $uuid );
+  for my $d ( $self->drivers->@* ) {
+    if (my $content = $d->read($uuid)) {
+      return $content;
+    }
+  }
+  return undef;
 }
 
 # TODO: Have a way to list all the reports in a storage so we can

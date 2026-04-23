@@ -42,4 +42,65 @@ subtest 'read report' => sub {
     is $got_content, $content;
 };
 
+subtest 'multi-storage' => sub {
+  subtest 'write to all storages' => sub {
+      my $tmp_first = File::Temp->newdir;
+      my $tmp_second = File::Temp->newdir;
+      my $uuid = lc guid_string();
+      my $content = 'report';
+
+      my $rd = CPAN::Testers::Collector::Storage->new(
+        Local => $tmp_first->dirname,
+        Local => $tmp_second->dirname,
+      );
+      $rd->write( $uuid, $content );
+
+      my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
+      my $got = path($tmp_first->dirname, $xx, $yy, $uuid);
+      ok -e $got, 'report file exists in first storage';
+      is $got->slurp, $content, 'report content correct in first storage';
+      $got = path($tmp_second->dirname, $xx, $yy, $uuid);
+      ok -e $got, 'report file exists in second storage';
+      is $got->slurp, $content, 'report content correct in second storage';
+  };
+
+  subtest 'read from first storage' => sub {
+      my $tmp_first = File::Temp->newdir;
+      my $tmp_second = File::Temp->newdir;
+      my $uuid = lc guid_string();
+      my $content = 'report';
+      my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
+      my $path = path($tmp_first->dirname, $xx, $yy, $uuid);
+      $path->dirname->make_path;
+      $path->spew($content);
+
+      my $rd = CPAN::Testers::Collector::Storage->new(
+        Local => $tmp_first->dirname,
+        Local => $tmp_second->dirname,
+      );
+      my $got_content = $rd->read( $uuid );
+
+      is $got_content, $content;
+  };
+
+  subtest 'read from second storage' => sub {
+      my $tmp_first = File::Temp->newdir;
+      my $tmp_second = File::Temp->newdir;
+      my $uuid = lc guid_string();
+      my $content = 'report';
+      my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
+      my $path = path($tmp_second->dirname, $xx, $yy, $uuid);
+      $path->dirname->make_path;
+      $path->spew($content);
+
+      my $rd = CPAN::Testers::Collector::Storage->new(
+        Local => $tmp_first->dirname,
+        Local => $tmp_second->dirname,
+      );
+      my $got_content = $rd->read( $uuid );
+
+      is $got_content, $content;
+  };
+};
+
 done_testing;

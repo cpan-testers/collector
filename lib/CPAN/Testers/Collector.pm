@@ -137,7 +137,9 @@ sub startup ( $app ) {
   $app->helper( storage => sub ($c, $key='storage') {
     state $storage = {};
     return $storage->{$key} ||= CPAN::Testers::Collector::Storage->new(
-      %{ $c->config->{$key} || {} },
+      ref $c->config->{$key} eq 'ARRAY' ? $c->config->{$key}->@* :
+      ref $c->config->{$key} eq 'HASH' ? $c->config->{$key}->%* :
+      $c->config->{$key}
     );
   });
 
