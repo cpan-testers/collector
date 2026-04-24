@@ -101,7 +101,6 @@ sub list($self, $prefix='') {
   for my $d ( $self->drivers->@* ) {
     my $iter = $d->list($prefix);
     while ( my @page = $iter->() ) {
-      say "Got " . scalar @page . " items";
       push @items, @page;
     }
   }
@@ -114,6 +113,21 @@ sub list($self, $prefix='') {
     }
     return ();
   };
+}
+
+=method variants
+
+List all the variants of the given report. Uses the L</list> method.
+
+=cut
+
+sub variants( $self, $uuid ) {
+  my $iter = $self->list($uuid);
+  my @variants;
+  while ( my @files = $iter->() ) {
+    push @variants, grep "$_", map { s/$uuid\.?//r } @files;
+  }
+  return @variants;
 }
 
 1;

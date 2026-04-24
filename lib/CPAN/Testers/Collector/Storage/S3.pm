@@ -135,8 +135,16 @@ sub list($self, $prefix='') {
     $args{prefix} = $prefix;
   }
   return sub {
-    state $iter = $self->_bucket->files(%args);
-    return map { $_->key } $iter->next_page;
+    state $iter;
+    if ($iter && !$iter->has_next) {
+      return ();
+    }
+    if (!$iter) {
+      $iter = $self->_bucket->files(%args);
+    }
+    my @files = map { $_->key } $iter->next_page;
+    $LOG->info('Got page', {has_next => $iter->has_next, next_page => $iter->page_number, endpoint => $self->endpoint, bucket => $self->bucket, size => scalar @files, prefix => $iter->prefix });
+    return @files;
   };
 }
 
