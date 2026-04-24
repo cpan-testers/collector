@@ -259,10 +259,16 @@ sub parse( $self, $report ) {
       next;
     }
 
-    # CPANPLUS ~0.9178, 0.9908 does not have dashes for markers
+    # CPANPLUS ~0.9113 - 0.9908 does not have dashes for markers
     if ($line =~ /^TEST RESULTS:/ && !$current_section) {
       $current_section = 'tests';
       $section_start = $i + 1;
+    }
+    # CPANPLUS ~0.9113 puts "MAKE TEST passed" on the same line as the `make
+    # test` output.
+    elsif ($line =~ /^MAKE TEST passed:/ && !$current_section) {
+      $current_section = 'tests';
+      $section_start = $i;
     }
     elsif ($line =~ /^PREREQUISITES:/ && $current_section eq 'tests') {
       $flush->($i);
