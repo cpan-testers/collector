@@ -251,21 +251,15 @@ sub parse( $self, $report ) {
       }
     }
 
-    # Small section markers (--)
-    if ($line =~ /^-+$/) {
-      $flush->($i) if ($current_section);
-      next;
-    }
-
     # Summary of my ...
     if ($line =~ /Summary of my /) {
-      $flush->($i) if ($current_section);
+      $flush->($i-1) if ($current_section);
       $current_section = 'configuration';
       $section_start = $i;
       next;
     }
 
-    # CPANPLUS ~0.9178 does not have dashes for markers
+    # CPANPLUS ~0.9178, 0.9908 does not have dashes for markers
     if ($line =~ /^TEST RESULTS:/ && !$current_section) {
       $current_section = 'tests';
       $section_start = $i + 1;

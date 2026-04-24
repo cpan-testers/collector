@@ -242,6 +242,43 @@ subtest 'parse' => sub {
     }, 'toolchain modules' or diag Dumper $report;
   };
 
+  subtest 'CPANPLUS-0.9908' => sub {
+    my $report = {
+      result => {
+        output => {
+          uncategorized => data_section('main', 'report-cpanplus-0.9908.txt'),
+        },
+      },
+    };
+    my $output = CPAN::Testers::Collector::Parse->parse($report);
+    like $output->{distribution}{prerequisites}, subset {
+      item {
+        phase => 'requires',
+        name => 'CGI::Simple::Cookie',
+        need => '1.109',
+        have => '1.25',
+      };
+      item {
+        phase => 'requires',
+        name => 'MooseX::MethodAttributes::Role::AttrContainer::Inheritable',
+        have => '0.32',
+        need => '0.24',
+      };
+    }, 'prerequisites' or diag Dumper $output;
+    like $output->{environment}{system}{variables}, hash {
+      field AUTOMATED_TESTING => "1";
+      etc();
+    }, 'environment variables' or diag Dumper $report;
+    like $output->{environment}{language}{variables}, hash {
+      field '$GID' => "1001 1001";
+      etc();
+    }, 'language special variables' or diag Dumper $report;
+    like $output->{environment}{system}{toolchain}, hash {
+      field 'Test::More' => "1.302181";
+      etc();
+    }, 'toolchain modules' or diag Dumper $report;
+  };
+
   subtest 'App::cpanminus::reporter 0.12 with 00-report-prereqs' => sub {
     my $report = {
       result => {
@@ -1710,3 +1747,497 @@ configure:
     ExtUtils::MakeMaker 0        6.63_02
 
 
+@@ report-cpanplus-0.9908.txt
+
+This distribution has been tested as part of the CPAN Testers
+project, supporting the Perl programming language.  See
+http://wiki.cpantesters.org/ for more information or email
+questions to cpan-testers-discuss@perl.org
+
+
+--
+
+Dear Graham Knop,
+
+This is a computer-generated error report created automatically by
+CPANPLUS, version 0.9908. Testers personal comments may appear
+at the end of this report.
+
+
+Thank you for uploading your work to CPAN.  Congratulations!
+All tests were successful.
+
+TEST RESULTS:
+
+Below is the error stack from stage 'make test':
+
+PERL_DL_NONLAZY=1 "/home/cpan/pit/thr/perl-5.30.0/bin/perl" "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness(0, 'blib/lib', 'blib/arch')" t/*.t t/aggregate/*.t
+t/01use.t ............................................................. ok
+t/abort-chain-1.t ..................................................... ok
+t/abort-chain-2.t ..................................................... ok
+t/abort-chain-3.t ..................................................... ok
+t/accept_context_regression.t ......................................... ok
+t/aggregate/c3_appclass_bug.t ......................................... ok
+t/aggregate/c3_mro.t .................................................. ok
+t/aggregate/caf_backcompat.t .......................................... ok
+t/aggregate/catalyst_test_utf8.t ...................................... ok
+t/aggregate/custom_live_component_controller_action_auto_doublebug.t .. ok
+t/aggregate/custom_live_path_bug.t .................................... ok
+t/aggregate/deprecated_test_import.t .................................. ok
+t/aggregate/deprecated_test_unimported.t .............................. ok
+t/aggregate/error_page_dump.t ......................................... ok
+t/aggregate/live_component_controller_action_action.t ................. ok
+t/aggregate/live_component_controller_action_auto.t ................... ok
+t/aggregate/live_component_controller_action_begin.t .................. ok
+t/aggregate/live_component_controller_action_chained.t ................ ok
+t/aggregate/live_component_controller_action_chained2.t ............... ok
+t/aggregate/live_component_controller_action_default.t ................ ok
+t/aggregate/live_component_controller_action_detach.t ................. ok
+t/aggregate/live_component_controller_action_die_in_end.t ............. ok
+t/aggregate/live_component_controller_action_end.t .................... ok
+t/aggregate/live_component_controller_action_forward.t ................ ok
+t/aggregate/live_component_controller_action_global.t ................. ok
+t/aggregate/live_component_controller_action_go.t ..................... ok
+t/aggregate/live_component_controller_action_index.t .................. ok
+t/aggregate/live_component_controller_action_index_or_default.t ....... ok
+t/aggregate/live_component_controller_action_inheritance.t ............ ok
+t/aggregate/live_component_controller_action_local.t .................. ok
+t/aggregate/live_component_controller_action_multipath.t .............. ok
+t/aggregate/live_component_controller_action_path.t ................... ok
+t/aggregate/live_component_controller_action_path_matchsingle.t ....... ok
+t/aggregate/live_component_controller_action_private.t ................ ok
+t/aggregate/live_component_controller_action_streaming.t .............. ok
+t/aggregate/live_component_controller_action_visit.t .................. ok
+t/aggregate/live_component_controller_actionroles.t ................... ok
+t/aggregate/live_component_controller_anon.t .......................... ok
+t/aggregate/live_component_controller_args.t .......................... ok
+t/aggregate/live_component_controller_attributes.t .................... ok
+t/aggregate/live_component_controller_httpmethods.t ................... ok
+t/aggregate/live_component_controller_moose.t ......................... ok
+t/aggregate/live_component_view_single.t .............................. ok
+t/aggregate/live_engine_request_auth.t ................................ ok
+t/aggregate/live_engine_request_body.t ................................ ok
+t/aggregate/live_engine_request_body_demand.t ......................... ok
+t/aggregate/live_engine_request_cookies.t ............................. ok
+t/aggregate/live_engine_request_env.t ................................. ok
+t/aggregate/live_engine_request_escaped_path.t ........................ ok
+t/aggregate/live_engine_request_headers.t ............................. ok
+t/aggregate/live_engine_request_parameters.t .......................... ok
+t/aggregate/live_engine_request_prepare_parameters.t .................. ok
+t/aggregate/live_engine_request_remote_user.t ......................... ok
+t/aggregate/live_engine_request_uploads.t ............................. ok
+t/aggregate/live_engine_request_uri.t ................................. ok
+t/aggregate/live_engine_response_body.t ............................... ok
+t/aggregate/live_engine_response_cookies.t ............................ ok
+t/aggregate/live_engine_response_emptybody.t .......................... ok
+t/aggregate/live_engine_response_errors.t ............................. ok
+t/aggregate/live_engine_response_headers.t ............................ ok
+t/aggregate/live_engine_response_large.t .............................. ok
+t/aggregate/live_engine_response_print.t .............................. ok
+t/aggregate/live_engine_response_redirect.t ........................... ok
+t/aggregate/live_engine_response_status.t ............................. ok
+t/aggregate/live_engine_setup_basics.t ................................ ok
+t/aggregate/live_engine_setup_plugins.t ............................... ok
+t/aggregate/live_loop.t ............................................... ok
+t/aggregate/live_plugin_loaded.t ...................................... ok
+t/aggregate/live_priorities.t ......................................... ok
+t/aggregate/live_recursion.t .......................................... ok
+t/aggregate/live_view_warnings.t ...................................... ok
+t/aggregate/meta_method_unneeded.t .................................... ok
+t/aggregate/psgi_file.t ............................................... ok
+t/aggregate/to_app.t .................................................. ok
+t/aggregate/unit_controller_actions.t ................................. ok
+t/aggregate/unit_controller_config.t .................................. ok
+t/aggregate/unit_controller_namespace.t ............................... ok
+t/aggregate/unit_core_action.t ........................................ ok
+t/aggregate/unit_core_action_for.t .................................... ok
+t/aggregate/unit_core_appclass_roles_in_plugin_list.t ................. ok
+t/aggregate/unit_core_classdata.t ..................................... ok
+t/aggregate/unit_core_component.t ..................................... ok
+t/aggregate/unit_core_component_generating.t .......................... ok
+t/aggregate/unit_core_component_layers.t .............................. ok
+t/aggregate/unit_core_component_loading.t ............................. ok
+t/aggregate/unit_core_component_mro.t ................................. ok
+t/aggregate/unit_core_controller_actions_config.t ..................... ok
+t/aggregate/unit_core_ctx_attr.t ...................................... ok
+t/aggregate/unit_core_engine-prepare_path.t ........................... ok
+t/aggregate/unit_core_engine_fixenv-iis6.t ............................ ok
+t/aggregate/unit_core_engine_fixenv-lighttpd.t ........................ ok
+t/aggregate/unit_core_log.t ........................................... ok
+t/aggregate/unit_core_log_autoflush.t ................................. ok
+t/aggregate/unit_core_merge_config_hashes.t ........................... ok
+t/aggregate/unit_core_mvc.t ........................................... ok
+t/aggregate/unit_core_path_to.t ....................................... ok
+t/aggregate/unit_core_plugin.t ........................................ ok
+t/aggregate/unit_core_script_cgi.t .................................... ok
+t/aggregate/unit_core_script_create.t ................................. ok
+t/aggregate/unit_core_script_fastcgi.t ................................ ok
+t/aggregate/unit_core_script_help.t ................................... ok
+t/aggregate/unit_core_script_run_options.t ............................ ok
+t/aggregate/unit_core_script_server-without_modules.t ................. ok
+t/aggregate/unit_core_script_server.t ................................. ok
+t/aggregate/unit_core_scriptrunner.t .................................. ok
+t/aggregate/unit_core_setup.t ......................................... ok
+t/aggregate/unit_core_setup_log.t ..................................... ok
+t/aggregate/unit_core_setup_stats.t ................................... ok
+t/aggregate/unit_core_uri_for.t ....................................... ok
+t/aggregate/unit_core_uri_for_action.t ................................ ok
+t/aggregate/unit_core_uri_for_multibytechar.t ......................... ok
+t/aggregate/unit_core_uri_with.t ...................................... ok
+t/aggregate/unit_dispatcher_requestargs_restore.t ..................... ok
+t/aggregate/unit_engineloader.t ....................................... ok
+t/aggregate/unit_load_catalyst_test.t ................................. ok
+t/aggregate/unit_metaclass_compat_extend_non_moose_controller.t ....... ok
+t/aggregate/unit_metaclass_compat_non_moose.t ......................... ok
+t/aggregate/unit_metaclass_compat_non_moose_controller.t .............. ok
+t/aggregate/unit_response.t ........................................... ok
+t/aggregate/unit_utils_env_value.t .................................... ok
+t/aggregate/unit_utils_home.t ......................................... ok
+t/aggregate/unit_utils_prefix.t ....................................... ok
+t/aggregate/unit_utils_request.t ...................................... ok
+t/aggregate/utf8_content_length.t ..................................... ok
+t/arg_constraints.t ................................................... skipped: Trouble loading Type::Tiny and friends => Can't locate Type/Tiny.pm in @INC (you may need to install the Type::Tiny module) (@INC contains: /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5 /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0 /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0 .) at (eval 10) line 1.
+t/args-empty-parens-bug.t ............................................. ok
+t/args0_bug.t ......................................................... ok
+t/bad_middleware_error.t .............................................. ok
+t/bad_warnings.t ...................................................... ok
+t/body_fh.t ........................................................... ok
+t/class_traits.t ...................................................... ok
+t/class_traits_CAR_bug.t .............................................. ok
+t/configured_comps.t .................................................. ok
+t/consumes.t .......................................................... ok
+t/content_negotiation.t ............................................... ok
+t/custom_exception_class_simple.t ..................................... ok
+t/data_handler.t ...................................................... ok
+t/dead_load_bad_args.t ................................................ skipped: Removing this test because constraint arg types allow this
+t/dead_load_multiple_chained_attributes.t ............................. ok
+t/dead_no_unknown_error.t ............................................. ok
+t/dead_recursive_chained_attributes.t ................................. ok
+t/deprecated.t ........................................................ ok
+t/deprecated_appclass_action_warnings.t ............................... ok
+t/dispatch_on_scheme.t ................................................ ok
+t/encoding_set_in_app.t ............................................... ok
+t/encoding_set_in_plugin.t ............................................ ok
+t/evil_stash.t ........................................................ ok
+t/execute_exception.t ................................................. ok
+t/head_middleware.t ................................................... ok
+t/http_exceptions.t ................................................... ok
+t/http_exceptions_backcompat.t ........................................ ok
+t/http_method.t ....................................................... skipped: Test Cases are Sketch for next release
+t/inject_component_util.t ............................................. ok
+t/live_catalyst_test.t ................................................ ok
+t/live_component_controller_context_closure.t ......................... skipped: Devel::Cycle 1.11 required for this test
+t/live_fork.t ......................................................... ok
+t/live_redirect_body.t ................................................ ok
+t/live_show_internal_actions_warnings.t ............................... ok
+t/live_stats.t ........................................................ ok
+t/middleware-stash.t .................................................. ok
+t/more-psgi-compat.t .................................................. ok
+t/no_test_stash_bug.t ................................................. ok
+t/not_utf8_query_bug.t ................................................ ok
+t/optional_http-server-restart.t ...................................... skipped: set TEST_HTTP to enable this test
+t/optional_lighttpd-fastcgi-non-root.t ................................ skipped: set TEST_LIGHTTPD to enable this test
+t/optional_lighttpd-fastcgi.t ......................................... skipped: set TEST_LIGHTTPD to enable this test
+t/optional_memleak.t .................................................. skipped: set TEST_MEMLEAK to enable this test
+t/optional_stress.t ................................................... skipped: set TEST_STRESS to enable this test
+t/optional_threads.t .................................................. skipped: set TEST_THREADS to enable this test
+t/path_action_empty_brackets.t ........................................ ok
+t/plack-middleware-plugin.t ........................................... ok
+t/plack-middleware.t .................................................. ok
+t/plugin_new_method_backcompat.t ...................................... ok
+t/psgi-log.t .......................................................... ok
+t/psgi_file_testapp.t ................................................. ok
+t/psgi_utils.t ........................................................ ok
+t/query_constraints.t ................................................. skipped: Trouble loading Type::Tiny and friends => Can't locate Type/Tiny.pm in @INC (you may need to install the Type::Tiny module) (@INC contains: /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0 /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5 /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0 /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0/OpenBSD.amd64-openbsd-thread-multi /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0 .) at (eval 10) line 1.
+t/query_keywords_and_parameters.t ..................................... ok
+t/relative_root_action_for_bug.t ...................................... ok
+t/remove_redundant_body.t ............................................. ok
+t/set_allowed_method.t ................................................ ok
+t/state.t ............................................................. ok
+t/undef-params.t ...................................................... ok
+t/undef_encoding_regression.t ......................................... ok
+t/unicode-exception-bug.t ............................................. ok
+t/unicode-exception-return-value.t .................................... ok
+t/unicode_plugin_charset_utf8.t ....................................... ok
+t/unicode_plugin_config.t ............................................. ok
+t/unicode_plugin_live.t ............................................... ok
+t/unicode_plugin_no_encoding.t ........................................ ok
+t/unicode_plugin_request_decode.t ..................................... ok
+t/unit_core_methodattributes_method_metaclass_on_subclasses.t ......... ok
+t/unit_core_script_test.t ............................................. ok
+t/unit_stats.t ........................................................ ok
+t/unit_utils_load_class.t ............................................. ok
+t/unit_utils_subdir.t ................................................. ok
+t/useless_set_headers.t ............................................... ok
+t/utf_incoming.t ...................................................... ok
+All tests successful.
+
+Test Summary Report
+-------------------
+t/aggregate/unit_core_uri_for.t                                     (Wstat: 0 Tests: 40 Failed: 0)
+  TODO passed:   22
+Files=198, Tests=3706, 863 wallclock secs ( 2.72 usr  2.43 sys + 760.09 cusr 81.61 csys = 846.85 CPU)
+Result: PASS
+
+
+PREREQUISITES:
+
+Here is a list of prerequisites you specified and versions we
+managed to load:
+
+	  Module Name                        Have     Want
+	  CGI::Simple::Cookie                1.25    1.109
+	  CGI::Struct                        1.21        0
+	  Carp                               1.50     1.25
+	  Class::C3::Adopt::NEXT             0.14     0.07
+	  Class::Load                        0.25     0.12
+	  Data::Dump                         1.23        0
+	  Data::OptList                     0.110        0
+	  Devel::InnerPackage                 0.4        0
+	  Encode                             3.01     2.49
+	  HTML::Entities                     3.75        0
+	  HTML::HeadParser                   3.75        0
+	  HTTP::Body                         1.22     1.22
+	  HTTP::Headers                      6.26     1.64
+	  HTTP::Request                      6.26    5.814
+	  HTTP::Request::Common              6.26        0
+	  HTTP::Response                     6.26    5.813
+	  HTTP::Status                       6.26        0
+	  Hash::MultiValue                   0.16        0
+	  JSON::MaybeXS                  1.004002 1.000000
+	  LWP                                6.49    5.837
+	  List::Util                         1.50     1.45
+	  MRO::Compat                        0.13        0
+	  Module::Pluggable                   5.2      4.7
+	  Moose                            2.2013   2.1400
+	  MooseX::Emulate::Class::Accessor::Fast 0.009032  0.00903
+	  MooseX::Getopt                     0.74     0.48
+	  MooseX::MethodAttributes::Role::AttrContainer::Inheritable     0.32     0.24
+	  Path::Class                        0.37     0.09
+	  PerlIO::utf8_strict               0.008        0
+	  Plack                            1.0047   0.9991
+	  Plack::Middleware::Conditional        0        0
+	  Plack::Middleware::ContentLength        0        0
+	  Plack::Middleware::FixMissingBodyInRedirect     0.12     0.09
+	  Plack::Middleware::HTTPExceptions        0        0
+	  Plack::Middleware::Head               0        0
+	  Plack::Middleware::IIS6ScriptNameFix        0        0
+	  Plack::Middleware::IIS7KeepAliveFix        0        0
+	  Plack::Middleware::LighttpdScriptNameFix        0        0
+	  Plack::Middleware::MethodOverride     0.20     0.12
+	  Plack::Middleware::RemoveRedundantBody     0.09     0.03
+	  Plack::Middleware::ReverseProxy     0.16     0.04
+	  Plack::Request::Upload                0        0
+	  Plack::Test::ExternalServer        0.02        0
+	  Safe::Isa                      1.000010        0
+	  Scalar::Util                       1.50        0
+	  Socket                            2.027     1.96
+	  Stream::Buffered                   0.03        0
+	  String::RewritePrefix             0.008    0.004
+	  Sub::Exporter                     0.987        0
+	  Task::Weaken                       1.06        0
+	  Test::Fatal                       0.016        0
+	  Test::More                     1.302181     0.88
+	  Text::Balanced                     2.03        0
+	  Text::SimpleTable                  2.07     0.03
+	  Time::HiRes                      1.9760        0
+	  Tree::Simple                       1.33     1.15
+	  Tree::Simple::Visitor::FindByUID     0.15        0
+	  Try::Tiny                          0.30     0.17
+	  URI                                5.05     1.65
+	  URI::ws                            0.03     0.03
+	  namespace::clean                   0.27     0.23
+
+Perl module toolchain versions installed:
+	Module Name                        Have
+	CPANPLUS                         0.9908
+	CPANPLUS::Dist::Build              0.90
+	Cwd                                3.78
+	ExtUtils::CBuilder             0.280234
+	ExtUtils::Command                  7.48
+	ExtUtils::Install                  2.18
+	ExtUtils::MakeMaker                7.48
+	ExtUtils::Manifest                 1.72
+	ExtUtils::ParseXS                  3.40
+	File::Spec                         3.78
+	Module::Build                    0.4231
+	Pod::Parser                        1.63
+	Pod::Simple                        3.35
+	Test2                          1.302181
+	Test::Harness                      3.42
+	Test::More                     1.302181
+	version                          0.9928
+
+******************************** NOTE ********************************
+The comments above are created mechanically, possibly without manual
+checking by the sender.  As there are many people performing automatic
+tests on each upload to CPAN, it is likely that you will receive
+identical messages about the same problem.
+
+If you believe that the message is mistaken, please reply to the first
+one with correction and/or additional informations, and do not take
+it personally.  We appreciate your patience. :)
+**********************************************************************
+
+Additional comments:
+
+
+This report was machine-generated by CPANPLUS::Dist::YACSmoke 1.08.
+Powered by minismokebox version 0.68
+
+CPANPLUS is prefering Build.PL
+
+------------------------------
+ENVIRONMENT AND OTHER CONTEXT
+------------------------------
+
+Environment variables:
+
+    AUTOMATED_TESTING = 1
+    NONINTERACTIVE_TESTING = 1
+    PATH = /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/script:/home/cpan/bin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin:/usr/local/bin:/usr/local/sbin:/usr/games
+    PERL5LIB = /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5:/home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib:/home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch
+    PERL5_CPANPLUS_IS_RUNNING = 59856
+    PERL5_CPANPLUS_IS_VERSION = 0.9908
+    PERL5_MINISMOKEBOX = 0.68
+    PERL5_YACSMOKE_BASE = /home/cpan/pit/thr/conf/perl-5.30.0
+    PERL_EXTUTILS_AUTOINSTALL = --defaultdeps
+    PERL_LOCAL_LIB_ROOT = /home/cpan/pit/jail/_A7rwLQ0Kr
+    PERL_MB_OPT = --install_base "/home/cpan/pit/jail/_A7rwLQ0Kr"
+    PERL_MM_OPT = INSTALL_BASE=/home/cpan/pit/jail/_A7rwLQ0Kr
+    PERL_MM_USE_DEFAULT = 1
+    PERL_USE_UNSAFE_INC = 1
+    SHELL = /usr/local/bin/bash
+    TERM = screen
+
+Perl special variables (and OS-specific diagnostics, for MSWin32):
+
+    Perl: $^X = /home/cpan/pit/thr/perl-5.30.0/bin/perl
+    UID:  $<  = 1001
+    EUID: $>  = 1001
+    GID:  $(  = 1001 1001
+    EGID: $)  = 1001 1001
+
+
+-------------------------------
+
+
+--
+
+Summary of my perl5 (revision 5 version 30 subversion 0) configuration:
+   
+  Platform:
+    osname=openbsd
+    osvers=6.6
+    archname=OpenBSD.amd64-openbsd-thread-multi
+    uname='openbsd outrage.bingosnet.co.uk 6.6 generic#4 amd64 '
+    config_args='-des -Dprefix=/home/cpan/pit/thr/perl-5.30.0 -Dusethreads'
+    hint=recommended
+    useposix=true
+    d_sigaction=define
+    useithreads=define
+    usemultiplicity=define
+    use64bitint=define
+    use64bitall=define
+    uselongdouble=undef
+    usemymalloc=n
+    default_inc_excludes_dot=define
+    bincompat5005=undef
+  Compiler:
+    cc='cc'
+    ccflags ='-pthread -fno-strict-aliasing -pipe -fstack-protector-strong -I/usr/local/include -D_FORTIFY_SOURCE=2'
+    optimize='-O2'
+    cppflags='-pthread -fno-strict-aliasing -pipe -fstack-protector-strong -I/usr/local/include'
+    ccversion=''
+    gccversion='4.2.1 Compatible OpenBSD Clang 8.0.1 (tags/RELEASE_801/final)'
+    gccosandvers=''
+    intsize=4
+    longsize=8
+    ptrsize=8
+    doublesize=8
+    byteorder=12345678
+    doublekind=3
+    d_longlong=define
+    longlongsize=8
+    d_longdbl=define
+    longdblsize=16
+    longdblkind=3
+    ivtype='long'
+    ivsize=8
+    nvtype='double'
+    nvsize=8
+    Off_t='off_t'
+    lseeksize=8
+    alignbytes=8
+    prototype=define
+  Linker and Libraries:
+    ld='cc'
+    ldflags ='-pthread -Wl,-E  -fstack-protector-strong -L/usr/local/lib'
+    libpth=/usr/lib /usr/local/lib
+    libs=-lpthread -lgdbm -lm -lutil -lc
+    perllibs=-lpthread -lm -lutil -lc
+    libc=/usr/lib/libc.so.95.1
+    so=so
+    useshrplib=false
+    libperl=libperl.a
+    gnulibc_version=''
+  Dynamic Linking:
+    dlsrc=dl_dlopen.xs
+    dlext=so
+    d_dlsymun=undef
+    ccdlflags=' '
+    cccdlflags='-DPIC -fPIC '
+    lddlflags='-shared -fPIC  -L/usr/local/lib -fstack-protector-strong'
+
+
+Characteristics of this binary (from libperl): 
+  Compile-time options:
+    HAS_TIMES
+    MULTIPLICITY
+    PERLIO_LAYERS
+    PERL_COPY_ON_WRITE
+    PERL_DONT_CREATE_GVSV
+    PERL_IMPLICIT_CONTEXT
+    PERL_MALLOC_WRAP
+    PERL_OP_PARENT
+    PERL_PRESERVE_IVUV
+    USE_64_BIT_ALL
+    USE_64_BIT_INT
+    USE_ITHREADS
+    USE_LARGE_FILES
+    USE_LOCALE
+    USE_LOCALE_COLLATE
+    USE_LOCALE_CTYPE
+    USE_LOCALE_NUMERIC
+    USE_LOCALE_TIME
+    USE_PERLIO
+    USE_PERL_ATOF
+    USE_REENTRANT_API
+  Locally applied patches:
+    Devel::PatchPerl 1.80
+  Built under openbsd
+  Compiled at Jan 24 2020 14:17:27
+  %ENV:
+    PERL5LIB="/home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5:/home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib:/home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch"
+    PERL5_CPANPLUS_IS_RUNNING="59856"
+    PERL5_CPANPLUS_IS_VERSION="0.9908"
+    PERL5_MINISMOKEBOX="0.68"
+    PERL5_YACSMOKE_BASE="/home/cpan/pit/thr/conf/perl-5.30.0"
+    PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
+    PERL_LOCAL_LIB_ROOT="/home/cpan/pit/jail/_A7rwLQ0Kr"
+    PERL_MB_OPT="--install_base "/home/cpan/pit/jail/_A7rwLQ0Kr""
+    PERL_MM_OPT="INSTALL_BASE=/home/cpan/pit/jail/_A7rwLQ0Kr"
+    PERL_MM_USE_DEFAULT="1"
+    PERL_USE_UNSAFE_INC="1"
+  @INC:
+    /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0/OpenBSD.amd64-openbsd-thread-multi
+    /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/5.30.0
+    /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5/OpenBSD.amd64-openbsd-thread-multi
+    /home/cpan/pit/jail/_A7rwLQ0Kr/lib/perl5
+    /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/lib
+    /home/cpan/pit/thr/conf/perl-5.30.0/.cpanplus/5.30.0/build/YgHG5l06lr/Catalyst-Runtime-5.90128/blib/arch
+    /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0/OpenBSD.amd64-openbsd-thread-multi
+    /home/cpan/pit/thr/perl-5.30.0/lib/site_perl/5.30.0
+    /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0/OpenBSD.amd64-openbsd-thread-multi
+    /home/cpan/pit/thr/perl-5.30.0/lib/5.30.0
+    .
