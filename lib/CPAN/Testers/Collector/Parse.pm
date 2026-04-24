@@ -237,6 +237,10 @@ sub parse( $self, $report ) {
           $heading_start = $i+1;
         }
         else {
+          # Heading cannot be more than 2 lines
+          if ($i - 1 - $heading_start > 2) {
+            $heading_start = $i - 3;
+          }
           my $heading = lc join " ", @lines[$heading_start..$i-1];
           $current_section = $headings{ $heading };
           if (!$current_section) {
