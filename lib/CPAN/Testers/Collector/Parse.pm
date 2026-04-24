@@ -239,7 +239,9 @@ sub parse( $self, $report ) {
     }
     # CPANPLUS ~0.9113 puts "MAKE TEST passed" on the same line as the `make
     # test` output.
-    elsif ($line =~ /^MAKE TEST passed:/ && !$current_section) {
+    # CPANPLUS ~0.9116 with no test output puts `[MSG]` right after "MAKE TEST
+    # passed"
+    elsif ($line =~ /^MAKE TEST passed[:\[]/ && !$current_section) {
       $current_section = 'tests';
       $section_start = $i;
     }
