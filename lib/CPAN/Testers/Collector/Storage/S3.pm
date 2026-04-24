@@ -115,4 +115,29 @@ sub read( $self, $uuid ) {
   }
 }
 
+=method list
+
+List reports. Returns a subref that returns sets of report UUIDs until there
+are no more.
+
+If a prefix is specified, returns any file in storage that matches the prefix.
+Otherwise, will only list UUIDs. This way, we can have additional data attached
+to reports by adding suffixes like C<.orig> or C<.yath>.
+
+=cut
+
+sub list($self, $prefix='') {
+  my %args = (
+    page_size => 10000,
+    page_number => 1,
+  );
+  if ($prefix) {
+    $args{prefix} = $prefix;
+  }
+  return sub {
+    state $iter = $self->_bucket->files(%args);
+    return map { $_->key } $iter->next_page;
+  };
+}
+
 1;

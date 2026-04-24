@@ -17,6 +17,7 @@ use v5.40;
 use Mojo::Base -base, -signatures;
 use Mojo::Loader qw( load_class );
 use Log::Any qw( $LOG );
+use List::Util qw( uniqstr );
 
 =attr driver
 
@@ -73,7 +74,46 @@ sub read( $self, $uuid ) {
   return undef;
 }
 
-# TODO: Have a way to list all the reports in a storage so we can
-# migrate between them.
+=method list
+
+List reports. Returns a subref that returns sets of report UUIDs until there
+are no more.
+
+If prefix is given, lists all files in storage with the given prefix. This way,
+we can have additional data attached to reports by adding suffixes like
+C<.orig> or C<.yath>.
+
+Unprefixed, this method lists only the first storage. With a prefix, it
+will de-duplicate the list from all storages.
+
+=cut
+
+sub list($self, $prefix='') {
+  if (!$prefix) {
+    # Listing all the UUIDs would be impossible to de-duplicate, so we
+    # just use the first driver for this.
+    return $self->drivers->[0]->list();
+  }
+
+  # Listing all the variants of a specific prefix should only be a handful
+  # of files, so we can cross storage boundaries.
+  my @items;
+  for my $d ( $self->drivers->@* ) {
+    my $iter = $d->list($prefix);
+    while ( my @page = $iter->() ) {
+      say "Got " . scalar @page . " items";
+      push @items, @page;
+    }
+  }
+
+  return sub {
+    state $fetched = 0;
+    if (!$fetched) {
+      $fetched++;
+      return uniqstr @items
+    }
+    return ();
+  };
+}
 
 1;

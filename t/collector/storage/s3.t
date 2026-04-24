@@ -93,4 +93,71 @@ subtest 'read report' => sub {
   };
 };
 
+subtest 'list()' => sub {
+  my ( $given_files, $got_bucket, $got_args );
+  my $mock = mock 'AWS::S3' => override => [
+    new => sub ($class, %attrs) {
+      return mock { attrs => \%attrs } => add => [
+        bucket => sub ($aws, $name) {
+          $got_bucket = $name;
+          return mock { } => add => [
+            files => sub ($self, %args) {
+              $got_args = \%args;
+              return mock { }, add => [
+                next_page => sub($self) {
+                  state $fetched = 0;
+                  if (!$fetched) {
+                    $fetched = 1;
+                    return map {
+                      mock { bucket => $name, key => $_ }, add => [
+                        key => sub { shift->{key} },
+                      ]
+                    } @$given_files;
+                  }
+                  return ();
+                },
+              ];
+            }
+          ];
+        },
+      ];
+    },
+  ];
+
+  my $rd = CPAN::Testers::Collector::Storage->new( S3 => \%create_args );
+
+  subtest 'report UUIDs' => sub {
+    $given_files = [ map { lc guid_string() } 0..4 ];
+    my $iter = $rd->list;
+    my @got_uuids;
+    while ( my @uuids = $iter->() ) {
+      push @got_uuids, @uuids;
+    }
+    like \@got_uuids, bag { item $_ for @$given_files; end() };
+    like $got_args, { prefix => DNE() };
+  };
+
+  subtest 'report variants' => sub {
+    my $uuid = lc guid_string();
+    $given_files = [ $uuid, "$uuid.orig" ];
+    my $iter = $rd->list($uuid);
+    my @got_files;
+    while ( my @files = $iter->() ) {
+      push @got_files, @files;
+    }
+    like \@got_files, bag { item $_ for $uuid, "$uuid.orig"; end() };
+    like $got_args, { prefix => $uuid };
+  };
+
+  subtest 'manifests' => sub {
+    $given_files = [ qw( MANIFEST MANIFEST.1 ) ];
+    my $iter = $rd->list('MANIFEST');
+    my @got_files;
+    while ( my @files = $iter->() ) {
+      push @got_files, @files;
+    }
+    like \@got_files, bag { item $_ for 'MANIFEST', 'MANIFEST.1'; end() };
+    like $got_args, { prefix => 'MANIFEST' };
+  };
+};
 done_testing;

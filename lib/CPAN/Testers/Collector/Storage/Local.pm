@@ -82,4 +82,27 @@ sub _uuid_path( $self, $uuid ) {
     return $path;
 }
 
+=method list
+
+List reports. Returns a subref that returns sets of report UUIDs until there
+are no more.
+
+If a prefix is specified, returns any file in storage that matches the prefix.
+Otherwise, will only list UUIDs. This way, we can have additional data attached
+to reports by adding suffixes like C<.orig> or C<.yath>.
+
+=cut
+
+sub list($self, $prefix='') {
+  my $re = $prefix ? qr/^$prefix/ : qr/^[0-9a-f-]{36}$/;
+  return sub {
+    state $fetched = 0;
+    return () if $fetched;
+    $fetched = my @files = path($self->root)->list_tree->map(sub { $_->basename })->grep($re)->each;
+    say "Fetched $fetched";
+    say for @files;
+    return @files;
+  };
+}
+
 1;
