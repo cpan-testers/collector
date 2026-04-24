@@ -53,6 +53,13 @@ sub run( $self, @args ) {
     $pm->wait_for_available_procs;
 
     unless ($pm->start) {
+      local $LOG->context->{pid} = $$;
+      local $LOG->context->{uuid} = $uuid;
+      local $SIG{__WARN__} = sub(@args) {
+        chomp for @args;
+        $LOG->warn(@args);
+      };
+
       # Fetch the report
       my $report_json = $storage->read( $uuid );
 
