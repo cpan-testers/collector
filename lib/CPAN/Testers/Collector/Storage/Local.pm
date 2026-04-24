@@ -23,6 +23,9 @@ use Time::Piece;
 use Scalar::Util qw( blessed );
 use Log::Any qw( $LOG );
 
+my $starts_with_uuid = qr/^[0-9a-f-]{36}/;
+my $is_uuid = qr/$starts_with_uuid\Z/;
+
 =attr root
 
 The root directory of the reports. Individual reports are stored in directories
@@ -51,7 +54,7 @@ used as the path to write to. C<$content> is a string of content.
 
 sub write( $self, $uuid, $content ) {
     $LOG->info('Writing to storage', {uuid => $uuid});
-    my $path = $self->_uuid_path($uuid);
+    my $path = $uuid =~ $starts_with_uuid ? $self->_uuid_path($uuid) : path($self->root, $uuid);
     $path->dirname->make_path;
     $path->spew($content);
 }
@@ -63,9 +66,9 @@ Read a report by UUID. Returns the string content of the report.
 =cut
 
 sub read( $self, $uuid ) {
-    my $file = $self->_uuid_path($uuid);
-    if (-e $file) {
-      return $file->slurp;
+    my $path = $uuid =~ $starts_with_uuid ? $self->_uuid_path($uuid) : path($self->root, $uuid);
+    if (-e $path) {
+      return $path->slurp;
     }
     return undef;
 }
@@ -94,7 +97,7 @@ to reports by adding suffixes like C<.orig> or C<.yath>.
 =cut
 
 sub list($self, $prefix='') {
-  my $re = $prefix ? qr/^$prefix/ : qr/^[0-9a-f-]{36}$/;
+  my $re = $prefix ? qr/^$prefix/ : $is_uuid;
   return sub {
     state $fetched = 0;
     return () if $fetched;

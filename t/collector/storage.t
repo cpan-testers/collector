@@ -13,21 +13,45 @@ use Mojo::File qw( path );
 use Data::GUID qw( guid_string );
 use CPAN::Testers::Collector::Storage;
 
-subtest 'write report' => sub {
+subtest 'write' => sub {
     my $tmp = File::Temp->newdir;
-    my $uuid = lc guid_string();
-    my $content = 'report';
-
     my $rd = CPAN::Testers::Collector::Storage->new( Local => $tmp->dirname );
-    $rd->write( $uuid, $content );
+    my $uuid = lc guid_string();
 
-    my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
-    my $got = path($tmp->dirname, $xx, $yy, $uuid);
-    ok -e $got, 'report file exists';
-    is $got->slurp, $content, 'report content correct';
+    subtest 'write report' => sub {
+        my $content = 'report';
+        $rd->write( $uuid, $content );
+
+        my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
+        my $got = path($tmp->dirname, $xx, $yy, $uuid);
+        ok -e $got, 'report file exists';
+        is $got->slurp, $content, 'report content correct';
+    };
+
+    subtest 'write report variant' => sub {
+        my $variant_name = "$uuid.variant";
+        my $content = 'variant';
+        $rd->write( $variant_name, $content );
+
+        my ( $xx, $yy ) = $uuid =~ m{^(.{2})(.{2})};
+        my $got = path($tmp->dirname, $xx, $yy, $variant_name);
+        ok -e $got, 'report variant file exists';
+        is $got->slurp, $content, 'report variant content correct';
+    };
+
+    subtest 'write unrelated file' => sub {
+        my $content = 'manifest';
+        my $manifest_name = 'MANIFEST';
+
+        $rd->write( $manifest_name, $content );
+
+        my $got = path($tmp->dirname, $manifest_name);
+        ok -e $got, 'unrelated file exists';
+        is $got->slurp, $content, 'unrelated content correct';
+    };
 };
 
-subtest 'read report' => sub {
+subtest 'read' => sub {
     my $tmp = File::Temp->newdir;
     my $uuid = lc guid_string();
     my $content = 'report';
@@ -36,10 +60,30 @@ subtest 'read report' => sub {
     $path->dirname->make_path;
     $path->spew($content);
 
-    my $rd = CPAN::Testers::Collector::Storage->new( Local => $tmp->dirname );
-    my $got_content = $rd->read( $uuid );
+    my $variant_content = 'variant';
+    my $variant_name = "$uuid.variant";
+    path($tmp->dirname, $xx, $yy, $variant_name)->spew($variant_content);
 
-    is $got_content, $content;
+    my $manifest_content = 'manifest';
+    my $manifest_name = 'MANIFEST';
+    path($tmp->dirname, $manifest_name)->spew($manifest_content);
+
+    my $rd = CPAN::Testers::Collector::Storage->new( Local => $tmp->dirname );
+
+    subtest 'read report' => sub {
+      my $got_content = $rd->read( $uuid );
+      is $got_content, $content;
+    };
+
+    subtest 'read report variant' => sub {
+      my $got_content = $rd->read( $variant_name );
+      is $got_content, $variant_content;
+    };
+
+    subtest 'read unrelated file' => sub {
+      my $got_content = $rd->read( $manifest_name );
+      is $got_content, $manifest_content;
+    };
 };
 
 subtest 'list' => sub {
