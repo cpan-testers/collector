@@ -228,8 +228,9 @@ sub parse( $self, $report ) {
     if ($line =~ /^---+$/) {
 
       # This is not a section heading if...
-      #   - It matches "Test Summary Report"
-      unless ($lines[$i-1] =~ /Test Summary Report/i) {
+      #   - Previous line matches "Test Summary Report"
+      #   - Previous line matches "Yath Result Summary"
+      unless ($lines[$i-1] =~ /Test Summary Report|Yath Result Summary/i) {
         # This is a section heading, so flush the section
         $flush->($i) if ($current_section);
         if (!$heading_start) {

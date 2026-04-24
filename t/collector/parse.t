@@ -279,6 +279,37 @@ subtest 'parse' => sub {
     }, 'toolchain modules' or diag Dumper $report;
   };
 
+  subtest 'CPANPLUS-0.9908 with YATH' => sub {
+    my $report = {
+      result => {
+        output => {
+          uncategorized => data_section('main', 'report-cpanplus-0.9908-with-yath.txt'),
+        },
+      },
+    };
+    my $output = CPAN::Testers::Collector::Parse->parse($report);
+    like $output->{distribution}{prerequisites}, subset {
+      item {
+        phase => 'requires',
+        name => 'Carp',
+        need => '0',
+        have => '1.50',
+      };
+    }, 'prerequisites' or diag Dumper $output;
+    like $output->{environment}{system}{variables}, hash {
+      field AUTOMATED_TESTING => "1";
+      etc();
+    }, 'environment variables' or diag Dumper $report;
+    like $output->{environment}{language}{variables}, hash {
+      field '$GID' => "1001 1001";
+      etc();
+    }, 'language special variables' or diag Dumper $report;
+    like $output->{environment}{system}{toolchain}, hash {
+      field 'Test::More' => "1.302181";
+      etc();
+    }, 'toolchain modules' or diag Dumper $report;
+  };
+
   subtest 'CPANPLUS-0.9113' => sub {
     my $report = {
       result => {
@@ -2513,3 +2544,493 @@ Characteristics of this binary (from libperl):
     /home/cpan/pit/rel/perl-5.12.1/lib/5.12.1/OpenBSD.i386-openbsd-thread-multi-64int
     /home/cpan/pit/rel/perl-5.12.1/lib/5.12.1
     .
+
+@@ report-cpanplus-0.9908-with-yath.txt
+
+This distribution has been tested as part of the CPAN Testers
+project, supporting the Perl programming language.  See
+http://wiki.cpantesters.org/ for more information or email
+questions to cpan-testers-discuss@perl.org
+
+
+--
+
+Dear EXODIST,
+
+This is a computer-generated error report created automatically by
+CPANPLUS, version 0.9908. Testers personal comments may appear
+at the end of this report.
+
+
+Thank you for uploading your work to CPAN.  Congratulations!
+All tests were successful.
+
+TEST RESULTS:
+
+Below is the error stack from stage 'make test':
+
+PERL_DL_NONLAZY=1 "/home/cpan/pit/thr/perl-5.32.0/bin/perl" "-Iblib/lib" "-Iblib/arch" test.pl
+1..2
+( PASSED )  job  1    t/integration/failure_cases.t
+( PASSED )  job  2    t/integration/retry.t
+( PASSED )  job  3    t/0-load_all.t
+( PASSED )  job  4    t/1-pod_name.t
+( PASSED )  job  5    t/HashBase.t
+( PASSED )  job  6    t/integration/concurrency.t
+( PASSED )  job  7    t/integration/encoding.t
+( PASSED )  job  8    t/integration/failed.t
+( PASSED )  job  9    t/integration/help.t
+( PASSED )  job 10    t/integration/includes.t
+( PASSED )  job 11    t/integration/init.t
+( PASSED )  job 12    t/integration/log_dir.t
+( SKIPPED)  job 13    t/integration/persist.t  -  This test is not run under automated testing
+( PASSED )  job 14    t/integration/plugin.t
+( PASSED )  job 15    t/integration/preload.t
+( PASSED )  job 16    t/integration/projects.t
+( PASSED )  job 17    t/integration/replay.t
+( PASSED )  job 18    t/integration/resource.t
+( SKIPPED)  job 19    t/integration/signals.t  -  Author test, set the $AUTHOR_TESTING environment variable to run it
+( PASSED )  job 20    t/integration/signals/abrt_or_iot.t
+( PASSED )  job 21    t/integration/smoke.t
+( PASSED )  job 22    t/integration/speedtag.t
+( PASSED )  job 23    t/integration/stamps.t
+( PASSED )  job 24    t/integration/test.t
+( PASSED )  job 25    t/integration/times.t
+( PASSED )  job 26    t/integration/verbose_env.t
+( PASSED )  job 27    t/unit/App/Yath.t
+( PASSED )  job 28    t/unit/App/Yath/Option.t
+( PASSED )  job 29    t/unit/App/Yath/Options.t
+( PASSED )  job 30    t/unit/App/Yath/Plugin.t
+( PASSED )  job 31    t/unit/App/Yath/Util.t
+( SKIPPED)  job 32    t/unit/Test2/Harness/Runner/DepTracer.t  -  TODO
+( PASSED )  job 33    t/unit/Test2/Harness/Settings.t
+( PASSED )  job 34    t/unit/Test2/Harness/Settings/Prefix.t
+( SKIPPED)  job 35    t/unit/Test2/Harness/Util.t  -  TODO
+( PASSED )  job 36    t/unit/Test2/Tools/HarnessTester.t
+( PASSED )  job 37    t/yath_script.t
+( PASSED )  job 38    t2/subtests.t
+( PASSED )  job 39    t2/tmp_perms.t
+( PASSED )  job 40    t2/vars.t
+( PASSED )  job 41    t/unit/App/Yath/Command/init.t
+( PASSED )  job 42    t/unit/App/Yath/Plugin/Git.t
+( PASSED )  job 43    t/unit/App/Yath/Plugin/SysInfo.t
+( PASSED )  job 44    t/unit/Test2/Harness/TestFile.t
+( PASSED )  job 45    t/unit/Test2/Harness/Util/File.t
+( PASSED )  job 46    t/unit/Test2/Harness/Util/File/JSON.t
+( PASSED )  job 47    t/unit/Test2/Harness/Util/File/JSONL.t
+( PASSED )  job 48    t/unit/Test2/Harness/Util/File/Stream.t
+( PASSED )  job 49    t/unit/Test2/Harness/Util/File/Value.t
+( PASSED )  job 50    t/unit/Test2/Harness/Util/JSON.t
+( PASSED )  job 51    t/unit/Test2/Harness/Util/Term.t
+( PASSED )  job 52    t2/builder.t
+( PASSED )  job 53    t2/caller.t
+( PASSED )  job 54    t2/data.t
+( PASSED )  job 55    t2/ending.t
+( PASSED )  job 56    t2/exception.t
+( PASSED )  job 57    t2/findbin.t
+( PASSED )  job 58    t2/ipc_reexec.t
+( PASSED )  job 59    t2/magic_vars.t
+( PASSED )  job 60    t2/no_stdout_eol.t
+( SKIPPED)  job 61    t2/output.t  -  Author test, set the $AUTHOR_TESTING environment variable to run it
+( PASSED )  job 62    t2/relative_paths.t
+( PASSED )  job 63    t2/relative_paths_no_fork.t
+( PASSED )  job 64    t2/require_file.t
+( PASSED )  job 65    t2/simple.t
+( PASSED )  job 66    t2/subtests_buffered.t
+( PASSED )  job 67    t2/subtests_streamed.t
+( PASSED )  job 68    t2/utf8-2.t
+( PASSED )  job 69    t2/utf8.t
+
+                                  Yath Result Summary
+----------------------------------------------------------------------------------------
+     File Count: 69
+Assertion Count: 1574
+      Wall Time: 137.68 seconds
+       CPU Time: 135.81 seconds (usr: 3.26s | sys: 0.08s | cusr: 105.55s | csys: 26.92s)
+      CPU Usage: 98%
+    -->  Result: PASSED  <--
+[0m
+( PASSED )  job  1    t/integration/failure_cases.t
+( PASSED )  job  2    t/integration/retry.t
+( PASSED )  job  3    t/0-load_all.t
+( PASSED )  job  4    t/1-pod_name.t
+( PASSED )  job  5    t/HashBase.t
+( PASSED )  job  6    t/integration/concurrency.t
+( PASSED )  job  7    t/integration/encoding.t
+( PASSED )  job  8    t/integration/failed.t
+( PASSED )  job  9    t/integration/help.t
+( PASSED )  job 10    t/integration/includes.t
+( PASSED )  job 11    t/integration/init.t
+( PASSED )  job 12    t/integration/log_dir.t
+( SKIPPED)  job 13    t/integration/persist.t  -  This test is not run under automated testing
+( PASSED )  job 14    t/integration/plugin.t
+( SKIPPED)  job 15    t/integration/preload.t  -  This test requires forking
+( PASSED )  job 16    t/integration/projects.t
+( PASSED )  job 17    t/integration/replay.t
+( PASSED )  job 18    t/integration/resource.t
+( SKIPPED)  job 19    t/integration/signals.t  -  Author test, set the $AUTHOR_TESTING environment variable to run it
+( PASSED )  job 20    t/integration/signals/abrt_or_iot.t
+( PASSED )  job 21    t/integration/smoke.t
+( PASSED )  job 22    t/integration/speedtag.t
+( PASSED )  job 23    t/integration/stamps.t
+( PASSED )  job 24    t/integration/test.t
+( PASSED )  job 25    t/integration/times.t
+( PASSED )  job 26    t/integration/verbose_env.t
+( PASSED )  job 27    t/unit/App/Yath.t
+( PASSED )  job 28    t/unit/App/Yath/Option.t
+( PASSED )  job 29    t/unit/App/Yath/Options.t
+( PASSED )  job 30    t/unit/App/Yath/Plugin.t
+( PASSED )  job 31    t/unit/App/Yath/Util.t
+( SKIPPED)  job 32    t/unit/Test2/Harness/Runner/DepTracer.t  -  TODO
+( PASSED )  job 33    t/unit/Test2/Harness/Settings.t
+( PASSED )  job 34    t/unit/Test2/Harness/Settings/Prefix.t
+( SKIPPED)  job 35    t/unit/Test2/Harness/Util.t  -  TODO
+( PASSED )  job 36    t/unit/Test2/Tools/HarnessTester.t
+( PASSED )  job 37    t/yath_script.t
+( PASSED )  job 38    t2/subtests.t
+( PASSED )  job 39    t2/tmp_perms.t
+( PASSED )  job 40    t2/vars.t
+( PASSED )  job 41    t/unit/App/Yath/Command/init.t
+( PASSED )  job 42    t/unit/App/Yath/Plugin/Git.t
+( PASSED )  job 43    t/unit/App/Yath/Plugin/SysInfo.t
+( PASSED )  job 44    t/unit/Test2/Harness/TestFile.t
+( PASSED )  job 45    t/unit/Test2/Harness/Util/File.t
+( PASSED )  job 46    t/unit/Test2/Harness/Util/File/JSON.t
+( PASSED )  job 47    t/unit/Test2/Harness/Util/File/JSONL.t
+( PASSED )  job 48    t/unit/Test2/Harness/Util/File/Stream.t
+( PASSED )  job 49    t/unit/Test2/Harness/Util/File/Value.t
+( PASSED )  job 50    t/unit/Test2/Harness/Util/JSON.t
+( PASSED )  job 51    t/unit/Test2/Harness/Util/Term.t
+( PASSED )  job 52    t2/builder.t
+( PASSED )  job 53    t2/caller.t
+( PASSED )  job 54    t2/data.t
+( PASSED )  job 55    t2/ending.t
+( PASSED )  job 56    t2/exception.t
+( PASSED )  job 57    t2/findbin.t
+( PASSED )  job 58    t2/ipc_reexec.t
+( PASSED )  job 59    t2/magic_vars.t
+( PASSED )  job 60    t2/no_stdout_eol.t
+( SKIPPED)  job 61    t2/output.t  -  Author test, set the $AUTHOR_TESTING environment variable to run it
+( PASSED )  job 62    t2/relative_paths.t
+( PASSED )  job 63    t2/relative_paths_no_fork.t
+( PASSED )  job 64    t2/require_file.t
+( PASSED )  job 65    t2/simple.t
+( PASSED )  job 66    t2/subtests_buffered.t
+( PASSED )  job 67    t2/subtests_streamed.t
+( PASSED )  job 68    t2/utf8-2.t
+( PASSED )  job 69    t2/utf8.t
+
+                                  Yath Result Summary
+----------------------------------------------------------------------------------------
+     File Count: 69
+Assertion Count: 1553
+      Wall Time: 145.22 seconds
+       CPU Time: 143.50 seconds (usr: 3.18s | sys: 0.08s | cusr: 112.77s | csys: 27.47s)
+      CPU Usage: 98%
+    -->  Result: PASSED  <--
+[0m
+ok 1 - Passed tests when run by yath (allow fork)
+ok 2 - Passed tests when run by yath (no fork)
+PERL_DL_NONLAZY=1 "/home/cpan/pit/thr/perl-5.32.0/bin/perl" "-MExtUtils::Command::MM" "-MTest::Harness" "-e" "undef *Test::Harness::Switches; test_harness(0, 'blib/lib', 'blib/arch')" t/*.t t/integration/*.t t/integration/signals/*.t t/unit/App/*.t t/unit/App/Yath/*.t t/unit/App/Yath/Command/*.t t/unit/App/Yath/Plugin/*.t t/unit/Test2/Harness/*.t t/unit/Test2/Harness/Runner/*.t t/unit/Test2/Harness/Settings/*.t t/unit/Test2/Harness/Util/*.t t/unit/Test2/Harness/Util/File/*.t t/unit/Test2/Tools/*.t
+t/0-load_all.t ........................... ok
+t/1-pod_name.t ........................... ok
+t/HashBase.t ............................. ok
+t/integration/concurrency.t .............. ok
+t/integration/encoding.t ................. ok
+t/integration/failed.t ................... ok
+t/integration/failure_cases.t ............ ok
+t/integration/help.t ..................... ok
+t/integration/includes.t ................. ok
+t/integration/init.t ..................... ok
+t/integration/log_dir.t .................. ok
+t/integration/persist.t .................. skipped: This test is not run under automated testing
+t/integration/plugin.t ................... ok
+t/integration/preload.t .................. ok
+t/integration/projects.t ................. ok
+t/integration/replay.t ................... ok
+t/integration/resource.t ................. ok
+t/integration/retry.t .................... ok
+t/integration/signals.t .................. skipped: Author test, set the $AUTHOR_TESTING environment variable to run it
+t/integration/signals/abrt_or_iot.t ...... ok
+t/integration/smoke.t .................... ok
+t/integration/speedtag.t ................. ok
+t/integration/stamps.t ................... ok
+t/integration/test.t ..................... ok
+t/integration/times.t .................... ok
+t/integration/verbose_env.t .............. ok
+t/unit/App/Yath.t ........................ ok
+t/unit/App/Yath/Command/init.t ........... ok
+t/unit/App/Yath/Option.t ................. ok
+t/unit/App/Yath/Options.t ................ ok
+t/unit/App/Yath/Plugin.t ................. ok
+t/unit/App/Yath/Plugin/Git.t ............. ok
+t/unit/App/Yath/Plugin/SysInfo.t ......... ok
+t/unit/App/Yath/Util.t ................... ok
+t/unit/Test2/Harness/Runner/DepTracer.t .. skipped: TODO
+t/unit/Test2/Harness/Settings.t .......... ok
+t/unit/Test2/Harness/Settings/Prefix.t ... ok
+t/unit/Test2/Harness/TestFile.t .......... ok
+t/unit/Test2/Harness/Util.t .............. skipped: TODO
+t/unit/Test2/Harness/Util/File.t ......... ok
+t/unit/Test2/Harness/Util/File/JSON.t .... ok
+t/unit/Test2/Harness/Util/File/JSONL.t ... ok
+t/unit/Test2/Harness/Util/File/Stream.t .. ok
+t/unit/Test2/Harness/Util/File/Value.t ... ok
+t/unit/Test2/Harness/Util/JSON.t ......... ok
+t/unit/Test2/Harness/Util/Term.t ......... ok
+t/unit/Test2/Tools/HarnessTester.t ....... ok
+t/yath_script.t .......................... ok
+All tests successful.
+Files=48, Tests=798, 124 wallclock secs ( 0.19 usr  0.05 sys + 96.63 cusr 26.00 csys = 122.87 CPU)
+Result: PASS
+
+
+PREREQUISITES:
+
+Here is a list of prerequisites you specified and versions we
+managed to load:
+
+	  Module Name                        Have     Want
+	  Carp                               1.50        0
+	  Cwd                                3.78        0
+	  Data::Dumper                      2.174        0
+	  Data::UUID                        1.226        0
+	  Exporter                           5.74        0
+	  ExtUtils::MakeMaker                7.48        0
+	  Fcntl                              1.13        0
+	  File::Copy                         2.34        0
+	  File::Find                         1.37        0
+	  File::Path                         2.17     2.11
+	  File::Spec                         3.78        0
+	  File::Temp                       0.2311        0
+	  Filter::Util::Call                 1.59        0
+	  IO::Compress::Bzip2               2.096        0
+	  IO::Compress::Gzip                2.096        0
+	  IO::Handle                         1.42     1.27
+	  IO::Uncompress::Bunzip2           2.096        0
+	  IO::Uncompress::Gunzip            2.096        0
+	  IPC::Cmd                           1.04        0
+	  Importer                          0.026    0.025
+	  JSON::PP                           4.04        0
+	  List::Util                         1.55     1.44
+	  Long::Jump                     0.000001 0.000001
+	  POSIX                              1.94        0
+	  Scalar::Util                       1.55        0
+	  Scope::Guard                       0.21        0
+	  Symbol                             1.08        0
+	  Sys::Hostname                      1.23        0
+	  Term::Table                       0.015    0.015
+	  Test2                          1.302181 1.302170
+	  Test2::API                     1.302181 1.302170
+	  Test2::Bundle::Extended        0.000138 0.000127
+	  Test2::Event                   1.302181 1.302170
+	  Test2::Event::V2               1.302181 1.302170
+	  Test2::Formatter               1.302181 1.302170
+	  Test2::Plugin::MemUsage        0.002003 0.002003
+	  Test2::Plugin::UUID            0.002001 0.002001
+	  Test2::Require::Module         0.000138 0.000127
+	  Test2::Tools::AsyncSubtest     0.000138 0.000127
+	  Test2::Tools::Subtest          0.000138 0.000127
+	  Test2::Util                    1.302181 1.302170
+	  Test2::Util::Term              0.000138 0.000127
+	  Test2::V0                      0.000138 0.000127
+	  Test::Builder                  1.302181 1.302170
+	  Test::Builder::Formatter       1.302181 1.302170
+	  Test::More                     1.302181 1.302170
+	  Time::HiRes                      1.9764        0
+	  base                               2.27        0
+	  constant                           1.33        0
+	  goto::file                        0.005    0.005
+	  parent                            0.238        0
+
+Perl module toolchain versions installed:
+	Module Name                        Have
+	CPANPLUS                         0.9908
+	CPANPLUS::Dist::Build              0.90
+	Cwd                                3.78
+	ExtUtils::CBuilder             0.280234
+	ExtUtils::Command                  7.48
+	ExtUtils::Install                  2.18
+	ExtUtils::MakeMaker                7.48
+	ExtUtils::Manifest                 1.72
+	ExtUtils::ParseXS                  3.40
+	File::Spec                         3.78
+	Module::Build                    0.4231
+	Pod::Parser                           0
+	Pod::Simple                        3.40
+	Test2                          1.302181
+	Test::Harness                      3.42
+	Test::More                     1.302181
+	version                          0.9928
+
+******************************** NOTE ********************************
+The comments above are created mechanically, possibly without manual
+checking by the sender.  As there are many people performing automatic
+tests on each upload to CPAN, it is likely that you will receive
+identical messages about the same problem.
+
+If you believe that the message is mistaken, please reply to the first
+one with correction and/or additional informations, and do not take
+it personally.  We appreciate your patience. :)
+**********************************************************************
+
+Additional comments:
+
+
+This report was machine-generated by CPANPLUS::Dist::YACSmoke 1.08.
+Powered by minismokebox version 0.68
+
+CPANPLUS is prefering Build.PL
+
+------------------------------
+ENVIRONMENT AND OTHER CONTEXT
+------------------------------
+
+Environment variables:
+
+    AUTOMATED_TESTING = 1
+    LANG = C.UTF-8
+    LC_COLLATE = C
+    NONINTERACTIVE_TESTING = 1
+    PATH = /home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/script:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    PERL5LIB = /home/cpan/pit/jail/NOg9ARIPgC/lib/perl5:/home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/lib:/home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/arch
+    PERL5_CPANPLUS_IS_RUNNING = 18922
+    PERL5_CPANPLUS_IS_VERSION = 0.9908
+    PERL5_MINISMOKEBOX = 0.68
+    PERL5_YACSMOKE_BASE = /home/cpan/pit/thr/conf/perl-5.32.0
+    PERL_EXTUTILS_AUTOINSTALL = --defaultdeps
+    PERL_LOCAL_LIB_ROOT = /home/cpan/pit/jail/NOg9ARIPgC
+    PERL_MB_OPT = --install_base "/home/cpan/pit/jail/NOg9ARIPgC"
+    PERL_MM_OPT = INSTALL_BASE=/home/cpan/pit/jail/NOg9ARIPgC
+    PERL_MM_USE_DEFAULT = 1
+    SHELL = /bin/bash
+    TERM = screen
+
+Perl special variables (and OS-specific diagnostics, for MSWin32):
+
+    Perl: $^X = /home/cpan/pit/thr/perl-5.32.0/bin/perl
+    UID:  $<  = 1001
+    EUID: $>  = 1001
+    GID:  $(  = 1001 1001
+    EGID: $)  = 1001 1001
+
+
+-------------------------------
+
+
+--
+
+Summary of my perl5 (revision 5 version 32 subversion 0) configuration:
+   
+  Platform:
+    osname=linux
+    osvers=5.4.43-1-lts
+    archname=x86_64-linux-thread-multi
+    uname='linux august 5.4.43-1-lts #2-alpine smp thu, 28 may 2020 20:13:48 utc x86_64 linux '
+    config_args='-des -Dprefix=/home/cpan/pit/thr/perl-5.32.0 -Dusethreads'
+    hint=recommended
+    useposix=true
+    d_sigaction=define
+    useithreads=define
+    usemultiplicity=define
+    use64bitint=define
+    use64bitall=define
+    uselongdouble=undef
+    usemymalloc=n
+    default_inc_excludes_dot=define
+    bincompat5005=undef
+  Compiler:
+    cc='cc'
+    ccflags ='-D_REENTRANT -D_GNU_SOURCE -D_GNU_SOURCE -fwrapv -fno-strict-aliasing -pipe -fstack-protector-strong -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64'
+    optimize='-O2'
+    cppflags='-D_REENTRANT -D_GNU_SOURCE -D_GNU_SOURCE -fwrapv -fno-strict-aliasing -pipe -fstack-protector-strong'
+    ccversion=''
+    gccversion='9.3.0'
+    gccosandvers=''
+    intsize=4
+    longsize=8
+    ptrsize=8
+    doublesize=8
+    byteorder=12345678
+    doublekind=3
+    d_longlong=define
+    longlongsize=8
+    d_longdbl=define
+    longdblsize=16
+    longdblkind=3
+    ivtype='long'
+    ivsize=8
+    nvtype='double'
+    nvsize=8
+    Off_t='off_t'
+    lseeksize=8
+    alignbytes=8
+    prototype=define
+  Linker and Libraries:
+    ld='cc'
+    ldflags =' -fstack-protector-strong -L/usr/local/lib'
+    libpth=/usr/include/fortify /usr/lib /usr/local/lib /lib/../lib /usr/lib/../lib /lib
+    libs=-lpthread -lgdbm -ldl -lm -lcrypt -lutil -lc -lgdbm_compat
+    perllibs=-lpthread -ldl -lm -lcrypt -lutil -lc
+    libc=/usr/lib/libc.a
+    so=so
+    useshrplib=false
+    libperl=libperl.a
+    gnulibc_version=''
+  Dynamic Linking:
+    dlsrc=dl_dlopen.xs
+    dlext=so
+    d_dlsymun=undef
+    ccdlflags='-Wl,-E'
+    cccdlflags='-fPIC'
+    lddlflags='-shared -O2 -L/usr/local/lib -fstack-protector-strong'
+
+
+Characteristics of this binary (from libperl): 
+  Compile-time options:
+    HAS_TIMES
+    MULTIPLICITY
+    PERLIO_LAYERS
+    PERL_COPY_ON_WRITE
+    PERL_DONT_CREATE_GVSV
+    PERL_IMPLICIT_CONTEXT
+    PERL_MALLOC_WRAP
+    PERL_OP_PARENT
+    PERL_PRESERVE_IVUV
+    USE_64_BIT_ALL
+    USE_64_BIT_INT
+    USE_ITHREADS
+    USE_LARGE_FILES
+    USE_LOCALE
+    USE_LOCALE_COLLATE
+    USE_LOCALE_CTYPE
+    USE_LOCALE_NUMERIC
+    USE_LOCALE_TIME
+    USE_PERLIO
+    USE_PERL_ATOF
+    USE_REENTRANT_API
+    USE_THREAD_SAFE_LOCALE
+  Built under linux
+  Compiled at Jun 21 2020 16:01:50
+  %ENV:
+    PERL5LIB="/home/cpan/pit/jail/NOg9ARIPgC/lib/perl5:/home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/lib:/home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/arch"
+    PERL5_CPANPLUS_IS_RUNNING="18922"
+    PERL5_CPANPLUS_IS_VERSION="0.9908"
+    PERL5_MINISMOKEBOX="0.68"
+    PERL5_YACSMOKE_BASE="/home/cpan/pit/thr/conf/perl-5.32.0"
+    PERL_EXTUTILS_AUTOINSTALL="--defaultdeps"
+    PERL_LOCAL_LIB_ROOT="/home/cpan/pit/jail/NOg9ARIPgC"
+    PERL_MB_OPT="--install_base "/home/cpan/pit/jail/NOg9ARIPgC""
+    PERL_MM_OPT="INSTALL_BASE=/home/cpan/pit/jail/NOg9ARIPgC"
+    PERL_MM_USE_DEFAULT="1"
+  @INC:
+    /home/cpan/pit/jail/NOg9ARIPgC/lib/perl5/5.32.0/x86_64-linux-thread-multi
+    /home/cpan/pit/jail/NOg9ARIPgC/lib/perl5/5.32.0
+    /home/cpan/pit/jail/NOg9ARIPgC/lib/perl5/x86_64-linux-thread-multi
+    /home/cpan/pit/jail/NOg9ARIPgC/lib/perl5
+    /home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/lib
+    /home/cpan/pit/thr/conf/perl-5.32.0/.cpanplus/5.32.0/build/sOxHMv4hqp/Test2-Harness-1.000042/blib/arch
+    /home/cpan/pit/thr/perl-5.32.0/lib/site_perl/5.32.0/x86_64-linux-thread-multi
+    /home/cpan/pit/thr/perl-5.32.0/lib/site_perl/5.32.0
+    /home/cpan/pit/thr/perl-5.32.0/lib/5.32.0/x86_64-linux-thread-multi
+    /home/cpan/pit/thr/perl-5.32.0/lib/5.32.0
