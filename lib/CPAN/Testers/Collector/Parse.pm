@@ -50,17 +50,6 @@ my %sections = (
 
 sub _parse_tests( $report, @lines ) {
   for my $line ( @lines ) {
-    if ($line =~ /^Result: (\w+)/) {
-      my $grade = lc $1;
-      if (!$report->{output}{grade}) {
-        $report->{output}{grade} = $grade;
-      }
-      else {
-        if ($report->{output}{grade} ne $grade) {
-          warn "Found grade $grade does not match report grade $report->{output}{grade}";
-        }
-      }
-    }
   }
 }
 
