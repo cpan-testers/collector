@@ -212,7 +212,6 @@ sub parse( $self, $report ) {
   my @lines = split /\n/, $report->{result}{output}{uncategorized};
   my $current_section;
   my $section_start = 0;
-  my $heading_start = 0;
 
   my $flush = sub($i) {
     # dump the current section into its individual parser
@@ -226,32 +225,12 @@ sub parse( $self, $report ) {
 
     # Handle section headings
     if ($line =~ /^---+$/) {
-
-      # This is not a section heading if...
-      #   - Previous line matches "Test Summary Report"
-      #   - Previous line matches "Yath Result Summary"
-      unless ($lines[$i-1] =~ /Test Summary Report|Yath Result Summary/i) {
-        # This is a section heading, so flush the section
-        $flush->($i) if ($current_section);
-        if (!$heading_start) {
-          $heading_start = $i+1;
-        }
-        else {
-          # Heading cannot be more than 2 lines
-          if ($i - 1 - $heading_start > 2) {
-            $heading_start = $i - 3;
-          }
-          my $heading = lc join " ", @lines[$heading_start..$i-1];
-          $current_section = $headings{ $heading };
-          if (!$current_section) {
-            warn "Unknown section $heading";
-            # Try re-starting the heading maybe?
-            $heading_start = $i+1;
-            next;
-          }
-          $section_start = $i + 1;
-          $heading_start = 0;
-        }
+      # The previous line determines if we're a section heading
+      my $heading = lc $lines[$i-1] =~ s/^\s+|\s+$//gr;
+      if ($headings{ $heading }) {
+        $flush->($i-2) if ($current_section);
+        $current_section = $headings{ $heading };
+        $section_start = $i + 1;
         next;
       }
     }
