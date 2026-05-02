@@ -41,17 +41,18 @@ sub run( $self, @args ) {
 
   # Download the manifest file we've been directed to use
   my $manifest_name = $manifest_prefix . $opt{manifest};
-  my @uuids = split /\n/, $storage->read($manifest_name);
-  $LOG->info('Got manifest', {name => $manifest_name, size => scalar @uuids});
+  my @lines = split /\n/, $storage->read($manifest_name);
+  $LOG->info('Got manifest', {name => $manifest_name, size => scalar @lines});
 
   # Loop over the UUIDs
   my $started = 0;
-  for my $uuid ( @uuids ) {
+  for my $lines ( @lines ) {
     if ($started++ % 1_000 == 0) {
-      $LOG->info('Processed', {started => $started, total => scalar @uuids, pct => sprintf("%02f",($started/@uuids)*100), });
+      $LOG->info('Processed', {started => $started, total => scalar @uuids, pct => sprintf("%02f",($started/@lines)*100), });
     }
-    $pm->wait_for_available_procs;
+    my ($uuid, @variants) = map s/^\s+|\s+$//gr, split ',', $line;
 
+    $pm->wait_for_available_procs;
     unless ($pm->start) {
       local $LOG->context->{pid} = $$;
       local $LOG->context->{uuid} = $uuid;
@@ -63,8 +64,9 @@ sub run( $self, @args ) {
       # Fetch the report
       my $report_json = $storage->read( $uuid );
 
-      # Check if there is an original, otherwise create one
-      unless ( grep /^$original_tag$/, $storage->variants($uuid) ) {
+      # Check if there is an original, otherwise create one.
+      # Check the manifest first before trying to list from storage.
+      unless ( grep /^$original_tag$/, @variants or grep /^$original_tag$/, $storage->variants($uuid) ) {
         $storage->write( "$uuid.$original_tag" => $report_json );
       }
 
