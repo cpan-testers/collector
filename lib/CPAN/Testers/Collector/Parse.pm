@@ -203,6 +203,7 @@ sub parse( $self, $report ) {
   my $section_start = 0;
 
   my $flush = sub($i) {
+    $gathered{$current_section}++;
     # dump the current section into its individual parser
     $sections{$current_section}->($report, @lines[$section_start..$i]);
     $section_start = 0;
@@ -266,6 +267,12 @@ sub parse( $self, $report ) {
   }
 
   $flush->($#lines) if ($current_section);
+
+  # Meta-report on whether we found the sections that we expected or wanted.
+  my @missing = grep !$gathered{$_}, keys %gathered;
+  if (@missing) {
+    $LOG->warn('Report missing sections', { sections => join(',',@missing) });
+  }
 
   return $report;
 }
