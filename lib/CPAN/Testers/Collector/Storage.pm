@@ -19,7 +19,7 @@ use Mojo::Loader qw( load_class );
 use Log::Any qw( $LOG );
 use List::Util qw( uniqstr );
 
-=attr driver
+=attr drivers
 
 The drivers for the actual report storage. Each driver should be one of L<CPAN::Testers::Collector::Storage::Local>
 or L<CPAN::Testers::Collector::Storage::S3>. Drivers are read from in order, and written to collectively.

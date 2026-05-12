@@ -46,9 +46,9 @@ sub run( $self, @args ) {
 
   # Loop over the UUIDs
   my $started = 0;
-  for my $lines ( @lines ) {
+  for my $line ( @lines ) {
     if ($started++ % 1_000 == 0) {
-      $LOG->info('Processed', {started => $started, total => scalar @uuids, pct => sprintf("%02f",($started/@lines)*100), });
+      $LOG->info('Processed', {started => $started, total => scalar @lines, pct => sprintf("%02f",($started/@lines)*100), });
     }
     my ($uuid, @variants) = map s/^\s+|\s+$//gr, split ',', $line;
 
