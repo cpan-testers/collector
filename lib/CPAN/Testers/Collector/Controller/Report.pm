@@ -8,6 +8,8 @@ package CPAN::Testers::Collector::Controller::Report;
 
 use builtin ':5.40';
 use Mojo::Base 'Mojolicious::Controller', -signatures;
+use Mojo::JSON qw( encode_json );
+use Time::Piece qw( gmtime );
 use Log::Any qw( $LOG );
 use Data::GUID;
 
@@ -39,7 +41,13 @@ sub report_post( $c ) {
       json => { error => 'No content' },
     );
   }
-  $c->storage->write( $uuid, $c->req->body );
+
+  # Some minor fixups
+  my $report = $c->req->json;
+  $report->{id} ||= $uuid;
+  $report->{created} ||= gmtime->datetime . 'Z';
+
+  $c->storage->write( $uuid, encode_json($report) );
   return $c->render(
     status => 201,
     json => [ $uuid ],

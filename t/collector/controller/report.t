@@ -4,7 +4,7 @@ use Test::Mojo;
 use Test2::V0;
 use File::Temp;
 use Data::GUID;
-use Mojo::JSON qw( encode_json );
+use Mojo::JSON qw( decode_json encode_json );
 use Time::Piece;
 use Mojo::SQLite;
 
@@ -47,7 +47,10 @@ subtest 'report_post' => sub {
   $t->post_ok('/v1/report', json => $minimum_report)->status_is(201);
   $t->json_like('/0', qr{.{32}}, 'returns the report UUID');
   my $uuid = $t->tx->res->json->[0];
-  ok $t->app->storage->read( $uuid ), 'report exists in storage';
+  ok my $json = $t->app->storage->read( $uuid ), 'report exists in storage';
+  my $report = decode_json( $json );
+  is $report->{id}, $uuid, 'id stored in report';
+  like $report->{created}, qr{\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z}, 'created stored in report';
 
   # XXX: should handle validation failures
 };
