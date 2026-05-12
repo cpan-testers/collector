@@ -44,7 +44,7 @@ sub report_post( $c ) {
 
   # Some minor fixups
   my $report = $c->req->json;
-  $report->{id} ||= $uuid;
+  $report->{id} ||= lc $uuid;
   $report->{created} ||= gmtime->datetime . 'Z';
 
   $c->storage->write( $uuid, encode_json($report) );

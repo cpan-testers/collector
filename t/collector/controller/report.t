@@ -49,7 +49,7 @@ subtest 'report_post' => sub {
   my $uuid = $t->tx->res->json->[0];
   ok my $json = $t->app->storage->read( $uuid ), 'report exists in storage';
   my $report = decode_json( $json );
-  is $report->{id}, $uuid, 'id stored in report';
+  is $report->{id}, lc $uuid, 'id stored in report';
   like $report->{created}, qr{\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z}, 'created stored in report';
 
   # XXX: should handle validation failures
@@ -59,7 +59,10 @@ subtest 'report_post with ID' => sub {
   my $uuid = Data::GUID->new;
   $t->post_ok('/v1/report/' . $uuid, json => $minimum_report)->status_is(201);
   $t->json_is('/0', $uuid, 'returns the report UUID');
-  ok $t->app->storage->read( $uuid ), 'report exists in storage';
+  ok my $json = $t->app->storage->read( $uuid ), 'report exists in storage';
+  my $report = decode_json( $json );
+  is $report->{id}, lc "$uuid", 'id stored in report';
+  like $report->{created}, qr{\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z}, 'created stored in report';
 };
 
 subtest 'report_get' => sub {
