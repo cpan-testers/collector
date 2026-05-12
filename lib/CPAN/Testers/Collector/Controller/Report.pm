@@ -32,7 +32,7 @@ Submit a new CPAN Testers report.
 
 sub report_post( $c ) {
   return if !$c->_validate;
-  my $uuid = $c->param('uuid') || Data::GUID->new->as_string;
+  my $uuid = lc( $c->param('uuid') || Data::GUID->new->as_string );
   my $body = $c->req->body;
   if (length $body <= 0) {
     $c->log->error(sprintf 'Report %s has no content', $c->param('uuid') // 'submitted');
@@ -44,10 +44,15 @@ sub report_post( $c ) {
 
   # Some minor fixups
   my $report = $c->req->json;
-  $report->{id} ||= lc $uuid;
+  $report->{id} ||= $uuid;
   $report->{created} ||= gmtime->datetime . 'Z';
 
+  # Write the report
   $c->storage->write( $uuid, encode_json($report) );
+
+  # Notify our adoring fans
+  $c->notify->publish( on_report => $uuid );
+
   return $c->render(
     status => 201,
     json => [ $uuid ],

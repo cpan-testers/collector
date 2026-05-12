@@ -70,6 +70,7 @@ use Mojo::JSON qw( decode_json );
 use OpenAPI::Modern;
 use CPAN::Testers::Collector::Storage;
 use CPAN::Testers::Collector::Index;
+use CPAN::Testers::Collector::Notify;
 
 =method startup
 
@@ -148,6 +149,13 @@ sub startup ( $app ) {
       %{ $c->config->{index} || {} },
     );
     return $index;
+  });
+
+  $app->helper( notify => sub ($c) {
+    state $notify = CPAN::Testers::Collector::Notify->new(
+      $c->config->{notify}->%*,
+    );
+    return $notify;
   });
 
   # Allow CORS for everyone

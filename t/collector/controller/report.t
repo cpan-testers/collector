@@ -41,6 +41,11 @@ my $t = Test::Mojo->new('CPAN::Testers::Collector', {
   index => {
     SQLite => Mojo::SQLite->new(':temp:'),
   },
+  notify => {
+    on_report => [
+      Mock => {},
+    ],
+  },
 });
 
 subtest 'report_post' => sub {
@@ -52,17 +57,20 @@ subtest 'report_post' => sub {
   is $report->{id}, lc $uuid, 'id stored in report';
   like $report->{created}, qr{\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z}, 'created stored in report';
 
+  like $t->app->notify->on_report->[0]->events, bag { item { on_report => lc $uuid } };
+
   # XXX: should handle validation failures
 };
 
 subtest 'report_post with ID' => sub {
-  my $uuid = Data::GUID->new;
-  $t->post_ok('/v1/report/' . $uuid, json => $minimum_report)->status_is(201);
+  my $uuid = lc Data::GUID->new;
+  $t->post_ok('/v1/report/' . uc $uuid, json => $minimum_report)->status_is(201);
   $t->json_is('/0', $uuid, 'returns the report UUID');
   ok my $json = $t->app->storage->read( $uuid ), 'report exists in storage';
   my $report = decode_json( $json );
-  is $report->{id}, lc "$uuid", 'id stored in report';
+  is $report->{id}, "$uuid", 'id stored in report';
   like $report->{created}, qr{\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z}, 'created stored in report';
+  like $t->app->notify->on_report->[0]->events, bag { item { on_report => $uuid } };
 };
 
 subtest 'report_get' => sub {
